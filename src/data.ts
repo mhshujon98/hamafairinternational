@@ -22,7 +22,7 @@ export const INITIAL_PASSENGERS: Passenger[] = [
   },
   {
     id: 'pass_2',
-    name: 'মোসাম্মাৎ শারমিন আক্তার (Mosammat Sharmin Akter)',
+    name: 'হাফেজ মোঃ মাহমুদুল হাসান (Hafez Md. Mahmudul Hasan)',
     passportNumber: 'EG0987123',
     phone: '01898765432',
     email: 'sharmin.it@yahoo.com',
@@ -41,7 +41,7 @@ export const INITIAL_PASSENGERS: Passenger[] = [
   },
   {
     id: 'pass_3',
-    name: 'ফয়সাল আহমেদ (Faisal Ahmed)',
+    name: 'হাফেজ মোঃ মাহমুদুল হাসান (Hafez Md. Mahmudul Hasan)',
     passportNumber: 'EH8372910',
     phone: '01555443322',
     email: 'faisal.dxb@gmail.com',
@@ -60,7 +60,7 @@ export const INITIAL_PASSENGERS: Passenger[] = [
   },
   {
     id: 'pass_4',
-    name: 'আনিসুর রহমান (Anisur Rahman)',
+    name: 'হাফেজ মোঃ মাহমুদুল হাসান (Hafez Md. Mahmudul Hasan)',
     passportNumber: 'EE7239104',
     phone: '01911223344',
     destination: 'Malaysia (মালয়েশিয়া)',
@@ -78,7 +78,7 @@ export const INITIAL_PASSENGERS: Passenger[] = [
   },
   {
     id: 'pass_5',
-    name: 'কামরুল হাসান (Kamrul Hasan)',
+    name: 'হাফেজ মোঃ মাহমুদুল হাসান (Hafez Md. Mahmudul Hasan)',
     passportNumber: 'EF4422991',
     phone: '01677889900',
     destination: 'Singapore (সিঙ্গাপুর)',

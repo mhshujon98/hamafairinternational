@@ -118,7 +118,7 @@ export default function PassengerForm({ passenger, onSubmit, onCancel }: Passeng
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="যেমন: মোহাম্মদ আব্দুর রহমান"
+                  placeholder="যেমন: হাফেজ মোঃ মাহমুদুল হাসান"
                   className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>

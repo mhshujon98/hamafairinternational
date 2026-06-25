@@ -143,7 +143,7 @@ export default function App() {
                 <input
                   id="header-global-search"
                   type="text"
-                  placeholder="যাত্রীর নাম লিখে সার্চ করুন... (e.g. আব্দুর রহমান)"
+                  placeholder="যাত্রীর নাম লিখে সার্চ করুন... (e.g. হাফেজ মোঃ মাহমুদুল হাসান)"
                   value={headerSearch}
                   onChange={(e) => {
                     setHeaderSearch(e.target.value);
