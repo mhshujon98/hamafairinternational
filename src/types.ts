@@ -18,6 +18,41 @@ export interface Passenger {
   amountPaid: number; // পরিশোধিত টাকা
   amountDue: number; // বকেয়া টাকা
   remarks?: string; // মন্তব্য
+  
+  // ট্রাভেল প্রসেস ও সৌৗদি দেশের জন্য প্রতিটা ধাপের ট্র্যাকিং তথ্য (Saudi/Travel Journey Steps)
+  passportSubmitDate?: string; // পাসপোর্ট জমা দেওয়ার তারিখ
+  passportExpiryDate?: string; // পাসপোর্টের মেয়াদ শেষ তারিখ (Expiry Date)
+  passportSubmitRemarks?: string; // পাসপোর্ট জমার মন্তব্য
+  
+  medicalStatus?: 'Pending' | 'Fit' | 'Unfit' | 'In Progress'; // মেডিকেল অবস্থা
+  medicalDate?: string; // মেডিকেল পরীক্ষার শুরুর তারিখ
+  medicalExpiryDate?: string; // মেডিকেল মেয়াদ শেষের তারিখ (Expiry Date)
+  medicalRemarks?: string; // মেডিকেল পরীক্ষার রিপোর্ট বা মন্তব্য
+  
+  mofaStatus?: 'Pending' | 'Done' | 'N/A'; // মুফা অবস্থা
+  mofaNumber?: string; // মুফা নম্বর
+  mofaDate?: string; // মুফা শুরুর তারিখ
+  mofaExpiryDate?: string; // মুফা মেয়াদ শেষের তারিখ (Expiry Date)
+  
+  visaStampingStatus?: 'Pending' | 'Done' | 'N/A'; // ভিসা স্ট্যাম্পিং অবস্থা
+  visaStampingDate?: string; // ভিসা স্ট্যাম্পিং শুরুর তারিখ
+  visaExpiryDate?: string; // ভিসা মেয়াদ শেষের তারিখ (Expiry Date)
+  
+  fingerprintStatus?: 'Pending' | 'Done' | 'N/A'; // ফিঙ্গারপ্রিন্ট অবস্থা
+  fingerprintDate?: string; // ফিঙ্গারপ্রিন্ট তারিখ
+  
+  taqamulStatus?: 'Pending' | 'Done' | 'N/A' | 'Failed'; // তাকামুল পেশা অবস্থা
+  taqamulProfession?: string; // তাকামুল পেশা (Taqamul Profession)
+  taqamulDate?: string; // তাকামুল পরীক্ষার তারিখ
+  taqamulExpiryDate?: string; // তাকামুল মেয়াদ শেষের তারিখ (Expiry Date)
+  
+  policeClearanceStatus?: 'Pending' | 'Done' | 'Not Required'; // পুলিশ ক্লিয়ারেন্স অবস্থা
+  policeClearanceDate?: string; // পুলিশ ক্লিয়ারেন্স শুরুর তারিখ
+  policeClearanceExpiryDate?: string; // পুলিশ ক্লিয়ারেন্স মেয়াদ শেষের তারিখ (Expiry Date)
+  
+  okToBoardStatus?: 'Pending' | 'Done' | 'N/A'; // ওকে টু বোর্ড অবস্থা
+  okToBoardDate?: string; // ওকে টু বোর্ড সম্পন্ন হওয়ার তারিখ
+
   createdAt: string;
   updatedAt: string;
 }

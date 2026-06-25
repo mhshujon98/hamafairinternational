@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Passenger, VisaStatus, TicketStatus, PaymentStatus } from '../types';
-import { Save, X, User, FileText, Phone, MapPin, Calendar, CreditCard, PenTool } from 'lucide-react';
+import { Save, X, User, FileText, Phone, MapPin, Calendar, CreditCard, PenTool, ClipboardCheck, Activity, ShieldCheck, Fingerprint, Globe } from 'lucide-react';
 
 interface PassengerFormProps {
   passenger?: Passenger | null;
@@ -23,6 +23,40 @@ export default function PassengerForm({ passenger, onSubmit, onCancel }: Passeng
   const [amountPaid, setAmountPaid] = useState<number>(0);
   const [remarks, setRemarks] = useState('');
 
+  // New Saudi/Travel Steps State
+  const [passportSubmitDate, setPassportSubmitDate] = useState('');
+  const [passportExpiryDate, setPassportExpiryDate] = useState('');
+  const [passportSubmitRemarks, setPassportSubmitRemarks] = useState('');
+  
+  const [medicalStatus, setMedicalStatus] = useState<'Pending' | 'Fit' | 'Unfit' | 'In Progress'>('Pending');
+  const [medicalDate, setMedicalDate] = useState('');
+  const [medicalExpiryDate, setMedicalExpiryDate] = useState('');
+  const [medicalRemarks, setMedicalRemarks] = useState('');
+  
+  const [mofaStatus, setMofaStatus] = useState<'Pending' | 'Done' | 'N/A'>('Pending');
+  const [mofaNumber, setMofaNumber] = useState('');
+  const [mofaDate, setMofaDate] = useState('');
+  const [mofaExpiryDate, setMofaExpiryDate] = useState('');
+  
+  const [visaStampingStatus, setVisaStampingStatus] = useState<'Pending' | 'Done' | 'N/A'>('Pending');
+  const [visaStampingDate, setVisaStampingDate] = useState('');
+  const [visaExpiryDate, setVisaExpiryDate] = useState('');
+  
+  const [fingerprintStatus, setFingerprintStatus] = useState<'Pending' | 'Done' | 'N/A'>('Pending');
+  const [fingerprintDate, setFingerprintDate] = useState('');
+  
+  const [taqamulStatus, setTaqamulStatus] = useState<'Pending' | 'Done' | 'N/A' | 'Failed'>('Pending');
+  const [taqamulProfession, setTaqamulProfession] = useState('');
+  const [taqamulDate, setTaqamulDate] = useState('');
+  const [taqamulExpiryDate, setTaqamulExpiryDate] = useState('');
+  
+  const [policeClearanceStatus, setPoliceClearanceStatus] = useState<'Pending' | 'Done' | 'Not Required'>('Pending');
+  const [policeClearanceDate, setPoliceClearanceDate] = useState('');
+  const [policeClearanceExpiryDate, setPoliceClearanceExpiryDate] = useState('');
+  
+  const [okToBoardStatus, setOkToBoardStatus] = useState<'Pending' | 'Done' | 'N/A'>('Pending');
+  const [okToBoardDate, setOkToBoardDate] = useState('');
+
   // If editing, fill in the existing passenger details
   useEffect(() => {
     if (passenger) {
@@ -39,6 +73,73 @@ export default function PassengerForm({ passenger, onSubmit, onCancel }: Passeng
       setTotalAmount(passenger.totalAmount);
       setAmountPaid(passenger.amountPaid);
       setRemarks(passenger.remarks || '');
+      
+      // Load travel process steps
+      setPassportSubmitDate(passenger.passportSubmitDate || '');
+      setPassportExpiryDate(passenger.passportExpiryDate || '');
+      setPassportSubmitRemarks(passenger.passportSubmitRemarks || '');
+      setMedicalStatus(passenger.medicalStatus || 'Pending');
+      setMedicalDate(passenger.medicalDate || '');
+      setMedicalExpiryDate(passenger.medicalExpiryDate || '');
+      setMedicalRemarks(passenger.medicalRemarks || '');
+      setMofaStatus(passenger.mofaStatus || 'Pending');
+      setMofaNumber(passenger.mofaNumber || '');
+      setMofaDate(passenger.mofaDate || '');
+      setMofaExpiryDate(passenger.mofaExpiryDate || '');
+      setVisaStampingStatus(passenger.visaStampingStatus || 'Pending');
+      setVisaStampingDate(passenger.visaStampingDate || '');
+      setVisaExpiryDate(passenger.visaExpiryDate || '');
+      setFingerprintStatus(passenger.fingerprintStatus || 'Pending');
+      setFingerprintDate(passenger.fingerprintDate || '');
+      setTaqamulStatus(passenger.taqamulStatus || 'Pending');
+      setTaqamulProfession(passenger.taqamulProfession || '');
+      setTaqamulDate(passenger.taqamulDate || '');
+      setTaqamulExpiryDate(passenger.taqamulExpiryDate || '');
+      setPoliceClearanceStatus(passenger.policeClearanceStatus || 'Pending');
+      setPoliceClearanceDate(passenger.policeClearanceDate || '');
+      setPoliceClearanceExpiryDate(passenger.policeClearanceExpiryDate || '');
+      setOkToBoardStatus(passenger.okToBoardStatus || 'Pending');
+      setOkToBoardDate(passenger.okToBoardDate || '');
+    } else {
+      // Reset form states for clear creation
+      setName('');
+      setPassportNumber('');
+      setPhone('');
+      setEmail('');
+      setDestination('');
+      setFlightNumber('');
+      setTravelDate('');
+      setVisaStatus('Pending');
+      setTicketStatus('Not Booked');
+      setPaymentStatus('Due');
+      setTotalAmount(0);
+      setAmountPaid(0);
+      setRemarks('');
+      setPassportSubmitDate('');
+      setPassportExpiryDate('');
+      setPassportSubmitRemarks('');
+      setMedicalStatus('Pending');
+      setMedicalDate('');
+      setMedicalExpiryDate('');
+      setMedicalRemarks('');
+      setMofaStatus('Pending');
+      setMofaNumber('');
+      setMofaDate('');
+      setMofaExpiryDate('');
+      setVisaStampingStatus('Pending');
+      setVisaStampingDate('');
+      setVisaExpiryDate('');
+      setFingerprintStatus('Pending');
+      setFingerprintDate('');
+      setTaqamulStatus('Pending');
+      setTaqamulProfession('');
+      setTaqamulDate('');
+      setTaqamulExpiryDate('');
+      setPoliceClearanceStatus('Pending');
+      setPoliceClearanceDate('');
+      setPoliceClearanceExpiryDate('');
+      setOkToBoardStatus('Pending');
+      setOkToBoardDate('');
     }
   }, [passenger]);
 
@@ -79,6 +180,33 @@ export default function PassengerForm({ passenger, onSubmit, onCancel }: Passeng
       amountPaid,
       amountDue,
       remarks: remarks || undefined,
+      
+      // Pass the step fields
+      passportSubmitDate: passportSubmitDate || undefined,
+      passportExpiryDate: passportExpiryDate || undefined,
+      passportSubmitRemarks: passportSubmitRemarks || undefined,
+      medicalStatus,
+      medicalDate: medicalDate || undefined,
+      medicalExpiryDate: medicalExpiryDate || undefined,
+      medicalRemarks: medicalRemarks || undefined,
+      mofaStatus,
+      mofaNumber: mofaNumber || undefined,
+      mofaDate: mofaDate || undefined,
+      mofaExpiryDate: mofaExpiryDate || undefined,
+      visaStampingStatus,
+      visaStampingDate: visaStampingDate || undefined,
+      visaExpiryDate: visaExpiryDate || undefined,
+      fingerprintStatus,
+      fingerprintDate: fingerprintDate || undefined,
+      taqamulStatus,
+      taqamulProfession: taqamulProfession || undefined,
+      taqamulDate: taqamulDate || undefined,
+      taqamulExpiryDate: taqamulExpiryDate || undefined,
+      policeClearanceStatus,
+      policeClearanceDate: policeClearanceDate || undefined,
+      policeClearanceExpiryDate: policeClearanceExpiryDate || undefined,
+      okToBoardStatus,
+      okToBoardDate: okToBoardDate || undefined,
     });
   };
 
@@ -274,6 +402,362 @@ export default function PassengerForm({ passenger, onSubmit, onCancel }: Passeng
                   <option value="Booked">Booked (বুক করা হয়েছে)</option>
                   <option value="Issued">Issued (ইস্যু করা হয়েছে)</option>
                 </select>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        {/* Saudi/Travel Journey Process Steps Section */}
+        <div className="border-t border-gray-100 pt-6">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+              ধাপ ভিত্তিক ট্রাভেল প্রসেস ট্র্যাকিং (Saudi / Travel Journey Tracking)
+            </h4>
+            <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-bold font-sans">ধাপ ভিত্তিক তথ্য</span>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 bg-slate-50/50 p-5 rounded-2xl border border-gray-100">
+            
+            {/* Step 1: Passport Submission */}
+            <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-xs space-y-3">
+              <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                <div className="p-1.5 rounded-lg bg-blue-50 text-blue-600">
+                  <FileText className="h-4 w-4" />
+                </div>
+                <span className="text-xs font-bold text-slate-800">১. পাসপোর্ট জমা (Passport Submit)</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">জমার তারিখ (Submit)</label>
+                  <input
+                    type="date"
+                    value={passportSubmitDate}
+                    onChange={(e) => setPassportSubmitDate(e.target.value)}
+                    className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">মেয়াদ শেষ তারিখ (Expiry)</label>
+                  <input
+                    type="date"
+                    value={passportExpiryDate}
+                    onChange={(e) => setPassportExpiryDate(e.target.value)}
+                    className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-500 mb-1">মন্তব্য/রিপোর্ট (Remarks)</label>
+                <input
+                  type="text"
+                  value={passportSubmitRemarks}
+                  onChange={(e) => setPassportSubmitRemarks(e.target.value)}
+                  placeholder="যেমন: মূল পাসপোর্ট ও ছবি জমা"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                />
+              </div>
+            </div>
+
+            {/* Step 2: Medical Test */}
+            <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-xs space-y-3">
+              <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                <div className="p-1.5 rounded-lg bg-indigo-50 text-indigo-600">
+                  <Activity className="h-4 w-4" />
+                </div>
+                <span className="text-xs font-bold text-slate-800">২. মেডিকেল টেস্ট (Medical Info)</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">অবস্থা (Status)</label>
+                  <select
+                    value={medicalStatus}
+                    onChange={(e) => setMedicalStatus(e.target.value as any)}
+                    className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                  >
+                    <option value="Pending">Pending</option>
+                    <option value="Fit">Fit (ফিট)</option>
+                    <option value="Unfit">Unfit (আনফিট)</option>
+                    <option value="In Progress">In Progress</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">টেস্টের তারিখ (Date)</label>
+                  <input
+                    type="date"
+                    value={medicalDate}
+                    onChange={(e) => setMedicalDate(e.target.value)}
+                    className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-500 mb-1">মেডিকেল মেয়াদ শেষ তারিখ (Medical Expiry)</label>
+                <input
+                  type="date"
+                  value={medicalExpiryDate}
+                  onChange={(e) => setMedicalExpiryDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-500 mb-1">মেডিকেল রিপোর্ট/মন্তব্য</label>
+                <input
+                  type="text"
+                  value={medicalRemarks}
+                  onChange={(e) => setMedicalRemarks(e.target.value)}
+                  placeholder="যেমন: গামকা মেডিকেল ফিট"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                />
+              </div>
+            </div>
+
+            {/* Step 3: Mofa Process */}
+            <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-xs space-y-3">
+              <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600">
+                  <Globe className="h-4 w-4" />
+                </div>
+                <span className="text-xs font-bold text-slate-800">৩. মুফা প্রসেস (Mofa Process)</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">মুফা স্ট্যাটাস</label>
+                  <select
+                    value={mofaStatus}
+                    onChange={(e) => setMofaStatus(e.target.value as any)}
+                    className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                  >
+                    <option value="Pending">Pending</option>
+                    <option value="Done">Done (সম্পন্ন)</option>
+                    <option value="N/A">N/A (প্রযোজ্য নয়)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">মুফা তারিখ (Date)</label>
+                  <input
+                    type="date"
+                    value={mofaDate}
+                    onChange={(e) => setMofaDate(e.target.value)}
+                    className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">মুফা নম্বর (Mofa No)</label>
+                  <input
+                    type="text"
+                    value={mofaNumber}
+                    onChange={(e) => setMofaNumber(e.target.value)}
+                    placeholder="যেমন: MF1928"
+                    className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:ring-1 focus:ring-blue-500 focus:outline-hidden uppercase"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">মেয়াদ শেষ তারিখ</label>
+                  <input
+                    type="date"
+                    value={mofaExpiryDate}
+                    onChange={(e) => setMofaExpiryDate(e.target.value)}
+                    className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Step 4: Visa Stamping */}
+            <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-xs space-y-3">
+              <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                <div className="p-1.5 rounded-lg bg-purple-50 text-purple-600">
+                  <ClipboardCheck className="h-4 w-4" />
+                </div>
+                <span className="text-xs font-bold text-slate-800">৪. ভিসা স্ট্যাম্পিং (Stamping)</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">স্ট্যাম্পিং অবস্থা</label>
+                  <select
+                    value={visaStampingStatus}
+                    onChange={(e) => setVisaStampingStatus(e.target.value as any)}
+                    className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                  >
+                    <option value="Pending">Pending</option>
+                    <option value="Done">Done (স্ট্যাম্পড)</option>
+                    <option value="N/A">N/A</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">সম্পন্নের তারিখ</label>
+                  <input
+                    type="date"
+                    value={visaStampingDate}
+                    onChange={(e) => setVisaStampingDate(e.target.value)}
+                    className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-500 mb-1">ভিসার মেয়াদ শেষ তারিখ (Visa Expiry)</label>
+                <input
+                  type="date"
+                  value={visaExpiryDate}
+                  onChange={(e) => setVisaExpiryDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                />
+              </div>
+            </div>
+
+            {/* Step 5: Fingerprint & Biometric */}
+            <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-xs space-y-3">
+              <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                <div className="p-1.5 rounded-lg bg-pink-50 text-pink-600">
+                  <Fingerprint className="h-4 w-4" />
+                </div>
+                <span className="text-xs font-bold text-slate-800">৫. ফিঙ্গারপ্রিন্ট (Fingerprint)</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">ফিঙ্গার অবস্থা</label>
+                  <select
+                    value={fingerprintStatus}
+                    onChange={(e) => setFingerprintStatus(e.target.value as any)}
+                    className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                  >
+                    <option value="Pending">Pending</option>
+                    <option value="Done">Done (সম্পন্ন)</option>
+                    <option value="N/A">N/A</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">ফিঙ্গার তারিখ</label>
+                  <input
+                    type="date"
+                    value={fingerprintDate}
+                    onChange={(e) => setFingerprintDate(e.target.value)}
+                    className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Step 6: Taqamul Profession */}
+            <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-xs space-y-3">
+              <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                <div className="p-1.5 rounded-lg bg-amber-50 text-amber-600">
+                  <Fingerprint className="h-4 w-4 text-amber-700 animate-pulse" />
+                </div>
+                <span className="text-xs font-bold text-slate-800">৬. তাকামুল পেশা (Taqamul Skill Test)</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">টেস্ট অবস্থা (Status)</label>
+                  <select
+                    value={taqamulStatus}
+                    onChange={(e) => setTaqamulStatus(e.target.value as any)}
+                    className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                  >
+                    <option value="Pending">Pending</option>
+                    <option value="Done">Done (উত্তীর্ণ)</option>
+                    <option value="Failed">Failed (ফেইল)</option>
+                    <option value="N/A">N/A</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">টেস্টের তারিখ (Date)</label>
+                  <input
+                    type="date"
+                    value={taqamulDate}
+                    onChange={(e) => setTaqamulDate(e.target.value)}
+                    className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-500 mb-1">মনোনীত পেশা (Taqamul Profession)</label>
+                <input
+                  type="text"
+                  value={taqamulProfession}
+                  onChange={(e) => setTaqamulProfession(e.target.value)}
+                  placeholder="যেমন: Plumber, Electrician"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-500 mb-1">মেয়াদ শেষ তারিখ (Expiry Date)</label>
+                <input
+                  type="date"
+                  value={taqamulExpiryDate}
+                  onChange={(e) => setTaqamulExpiryDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                />
+              </div>
+            </div>
+
+            {/* Step 7: Police Clearance & Ok To Board */}
+            <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-xs space-y-3">
+              <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600">
+                  <ShieldCheck className="h-4 w-4" />
+                </div>
+                <span className="text-xs font-bold text-slate-800">৭. পুলিশ ও ওকে টু বোর্ড</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">পুলিশ ক্লিয়ারেন্স</label>
+                  <select
+                    value={policeClearanceStatus}
+                    onChange={(e) => setPoliceClearanceStatus(e.target.value as any)}
+                    className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                  >
+                    <option value="Pending">Pending</option>
+                    <option value="Done">Done (ওকে)</option>
+                    <option value="Not Required">Not Required</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">ওকে টু বোর্ড (OTB)</label>
+                  <select
+                    value={okToBoardStatus}
+                    onChange={(e) => setOkToBoardStatus(e.target.value as any)}
+                    className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                  >
+                    <option value="Pending">Pending</option>
+                    <option value="Done">Done (ওকে)</option>
+                    <option value="N/A">N/A</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">পুলিশ ক্লিয়া. তারিখ</label>
+                  <input
+                    type="date"
+                    value={policeClearanceDate}
+                    onChange={(e) => setPoliceClearanceDate(e.target.value)}
+                    className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">পুলিশ মেয়াদ শেষ</label>
+                  <input
+                    type="date"
+                    value={policeClearanceExpiryDate}
+                    onChange={(e) => setPoliceClearanceExpiryDate(e.target.value)}
+                    className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-500 mb-1">ওকে টু বোর্ড সম্পন্ন তারিখ (OTB Date)</label>
+                <input
+                  type="date"
+                  value={okToBoardDate}
+                  onChange={(e) => setOkToBoardDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                />
               </div>
             </div>
 

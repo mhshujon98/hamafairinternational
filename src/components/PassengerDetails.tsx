@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Passenger } from '../types';
-import { X, Printer, Copy, Check, MessageSquare, MapPin, Calendar, Compass, User, CreditCard, Tag } from 'lucide-react';
+import { X, Printer, Copy, Check, MessageSquare, MapPin, Calendar, Compass, User, CreditCard, Tag, FileText, Activity, Globe, ClipboardCheck, Fingerprint, ShieldCheck } from 'lucide-react';
 
 interface PassengerDetailsProps {
   passenger: Passenger;
@@ -9,6 +9,104 @@ interface PassengerDetailsProps {
 
 export default function PassengerDetails({ passenger, onClose }: PassengerDetailsProps) {
   const [copied, setCopied] = useState(false);
+
+  // Step tracker definitions
+  const steps = [
+    {
+      label: '১. পাসপোর্ট জমা',
+      sublabel: 'Passport Submitted',
+      date: passenger.passportSubmitDate,
+      expiryDate: passenger.passportExpiryDate,
+      status: passenger.passportSubmitDate ? 'Done' : 'Pending',
+      remarks: passenger.passportSubmitRemarks,
+      icon: FileText,
+      colorClass: 'text-blue-600 bg-blue-50 border-blue-100',
+    },
+    {
+      label: '২. মেডিকেল পরীক্ষা',
+      sublabel: 'Medical Check (GAMCA)',
+      date: passenger.medicalDate,
+      expiryDate: passenger.medicalExpiryDate,
+      status: passenger.medicalStatus || 'Pending',
+      remarks: passenger.medicalRemarks,
+      icon: Activity,
+      colorClass: 'text-indigo-600 bg-indigo-50 border-indigo-100',
+    },
+    {
+      label: '৩. মুফা প্রসেস',
+      sublabel: 'MOFA Visa Number',
+      date: passenger.mofaDate,
+      expiryDate: passenger.mofaExpiryDate,
+      status: passenger.mofaStatus || 'Pending',
+      remarks: passenger.mofaNumber ? `Mofa #: ${passenger.mofaNumber}` : undefined,
+      icon: Globe,
+      colorClass: 'text-emerald-600 bg-emerald-50 border-emerald-100',
+    },
+    {
+      label: '৪. ভিসা স্ট্যাম্পিং',
+      sublabel: 'Visa Stamping',
+      date: passenger.visaStampingDate,
+      expiryDate: passenger.visaExpiryDate,
+      status: passenger.visaStampingStatus || 'Pending',
+      icon: ClipboardCheck,
+      colorClass: 'text-purple-600 bg-purple-50 border-purple-100',
+    },
+    {
+      label: '৫. ফিঙ্গারপ্রিন্ট',
+      sublabel: 'Fingerprint & Bio',
+      date: passenger.fingerprintDate,
+      status: passenger.fingerprintStatus || 'Pending',
+      icon: Fingerprint,
+      colorClass: 'text-pink-600 bg-pink-50 border-pink-100',
+    },
+    {
+      label: '৬. তাকামুল পেশা',
+      sublabel: 'Taqamul Profession Verification',
+      date: passenger.taqamulDate,
+      expiryDate: passenger.taqamulExpiryDate,
+      status: passenger.taqamulStatus || 'Pending',
+      remarks: passenger.taqamulProfession ? `পেশা: ${passenger.taqamulProfession}` : undefined,
+      icon: Fingerprint,
+      colorClass: 'text-orange-600 bg-orange-50 border-orange-100',
+    },
+    {
+      label: '৭. পুলিশ ক্লিয়ারেন্স',
+      sublabel: 'Police Clearance',
+      date: passenger.policeClearanceDate,
+      expiryDate: passenger.policeClearanceExpiryDate,
+      status: passenger.policeClearanceStatus || 'Pending',
+      icon: ShieldCheck,
+      colorClass: 'text-amber-600 bg-amber-50 border-amber-100',
+    },
+    {
+      label: '৮. ওকে টু বোর্ড',
+      sublabel: 'Ok To Board Status',
+      date: passenger.okToBoardDate,
+      status: passenger.okToBoardStatus || 'Pending',
+      icon: Compass,
+      colorClass: 'text-teal-600 bg-teal-50 border-teal-100',
+    }
+  ];
+
+  const getStepBadge = (status: string) => {
+    switch (status) {
+      case 'Done':
+      case 'Fit':
+      case 'Approved':
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case 'Unfit':
+      case 'Rejected':
+      case 'Failed':
+        return 'bg-rose-50 text-rose-700 border-rose-200';
+      case 'In Progress':
+        return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 'Not Required':
+      case 'N/A':
+        return 'bg-gray-100 text-gray-500 border-gray-200';
+      default:
+        return 'bg-amber-50 text-amber-700 border-amber-200';
+    }
+  };
 
   // Status Style Helpers
   const getVisaBadge = (status: string) => {
@@ -59,6 +157,9 @@ export default function PassengerDetails({ passenger, onClose }: PassengerDetail
           .Rejected { background-color: #fef2f2; color: #b91c1c; border-color: #fca5a5; }
           .Issued { background-color: #e0e7ff; color: #4338ca; border-color: #c7d2fe; }
           .remarks-box { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 15px; margin-top: 30px; }
+          .step-table { width: 100%; border-collapse: collapse; margin-top: 25px; margin-bottom: 25px; }
+          .step-table th, .step-table td { border: 1px solid #e5e7eb; padding: 10px 14px; text-align: left; font-size: 12px; }
+          .step-table th { background-color: #f9fafb; font-weight: bold; color: #1e3a8a; }
           .footer { margin-top: 50px; text-align: center; font-size: 11px; color: #888; border-top: 1px solid #eee; padding-top: 20px; }
         `);
         printWindow.document.write('</style></head><body>');
@@ -177,6 +278,32 @@ _যাত্রীর সুন্দর ও নিরাপদ সফর ক�
               </div>
             </div>
 
+            <div style={{ marginTop: '25px', marginBottom: '10px', fontWeight: 'bold', color: '#1e3a8a', borderBottom: '1px solid #1e3a8a', paddingBottom: '5px', fontSize: '14px' }}>
+              Travel Journey Milestone Tracking / প্রসেস ট্র্যাকিং বিবরণী
+            </div>
+            <table className="step-table">
+              <thead>
+                <tr>
+                  <th style={{ textAlign: 'left' }}>ধাপ (Step)</th>
+                  <th style={{ textAlign: 'left' }}>অবস্থা (Status)</th>
+                  <th style={{ textAlign: 'left' }}>শুরুর তারিখ (Start Date)</th>
+                  <th style={{ textAlign: 'left' }}>মেয়াদ শেষ (Expiry Date)</th>
+                  <th style={{ textAlign: 'left' }}>মন্তব্য / বিবরণ (Details)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {steps.map((st, i) => (
+                  <tr key={i}>
+                    <td style={{ fontWeight: 500 }}>{st.label}</td>
+                    <td>{st.status}</td>
+                    <td style={{ fontFamily: 'monospace' }}>{st.date || 'N/A'}</td>
+                    <td style={{ fontFamily: 'monospace', color: st.expiryDate ? '#b91c1c' : '#555' }}>{st.expiryDate || 'N/A'}</td>
+                    <td>{st.remarks || '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
             {passenger.remarks && (
               <div className="remarks-box">
                 <div className="label" style={{ marginBottom: '5px' }}>Remarks & Notes / বিশেষ মন্তব্য</div>
@@ -242,6 +369,72 @@ _যাত্রীর সুন্দর ও নিরাপদ সফর ক�
                   <span className="text-sm font-semibold text-gray-800 font-mono">{passenger.phone}</span>
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Saudi/Travel Journey Milestones Pipeline */}
+          <div className="border border-gray-100 rounded-2xl p-5 bg-white space-y-4">
+            <div className="flex items-center justify-between border-b border-gray-50 pb-2">
+              <h5 className="font-semibold text-gray-800 text-sm flex items-center gap-2">
+                <Compass className="h-4 w-4 text-blue-600 animate-spin-slow animate-pulse" />
+                ধাপ ভিত্তিক ট্রাভেল প্রসেস ট্র্যাকিং (Travel Journey Progress)
+              </h5>
+              <span className="text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full font-bold">সৌদি আরব স্পেশাল</span>
+            </div>
+
+            {/* Steps Container */}
+            <div className="space-y-3 pt-1">
+              {steps.map((step, idx) => {
+                const StepIcon = step.icon;
+                return (
+                  <div key={idx} className="flex items-start gap-3 p-3 rounded-xl border border-gray-50 bg-slate-50/50 hover:bg-slate-50 transition-colors">
+                    {/* Icon status container */}
+                    <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 border ${step.colorClass}`}>
+                      <StepIcon className="h-4 w-4" />
+                    </div>
+
+                    {/* Step details */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-bold text-gray-800">{step.label}</span>
+                        <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full border ${getStepBadge(step.status)}`}>
+                          {step.status}
+                        </span>
+                      </div>
+                      
+                      <div className="flex flex-col gap-1.5 mt-1 text-[11px]">
+                        <div className="flex items-center justify-between text-gray-500">
+                          <span className="italic">{step.sublabel}</span>
+                        </div>
+                        
+                        <div className="flex flex-wrap gap-2 pt-0.5">
+                          {step.date ? (
+                            <span className="font-mono bg-white px-2 py-0.5 rounded border border-gray-100 flex items-center gap-1 text-gray-600">
+                              <span className="text-[10px] font-sans font-bold text-slate-400">শুরু:</span>
+                              <Calendar className="h-3 w-3 text-gray-400" /> {step.date}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 italic">তারিখ নির্ধারিত নয় (No date set)</span>
+                          )}
+                          
+                          {step.expiryDate && (
+                            <span className="font-mono bg-rose-50/50 text-rose-700 px-2 py-0.5 rounded border border-rose-100 flex items-center gap-1">
+                              <span className="text-[10px] font-sans font-bold text-rose-500 font-sans">মেয়াদ শেষ:</span>
+                              <Calendar className="h-3 w-3 text-rose-400" /> {step.expiryDate}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {step.remarks && (
+                        <div className="mt-1.5 text-[11px] bg-white px-2.5 py-1.5 rounded-lg border border-gray-100 text-gray-600 leading-relaxed">
+                          📝 {step.remarks}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
