@@ -1,0 +1,6 @@
+{
+  "name": "Hama Fair International Passenger Database",
+  "description": "A comprehensive passenger database and management system for Hama Fair International Travel Agency to record, search, and manage passenger information.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
