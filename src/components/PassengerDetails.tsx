@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Passenger } from '../types';
-import { X, Printer, Copy, Check, MessageSquare, MapPin, Calendar, Compass, User, CreditCard, Tag, FileText, Activity, Globe, ClipboardCheck, Fingerprint, ShieldCheck } from 'lucide-react';
+import { X, Printer, Copy, Check, MessageSquare, MapPin, Calendar, Compass, User, CreditCard, Tag, FileText, Activity, Globe, ClipboardCheck, Fingerprint, ShieldCheck, BookOpen, Briefcase, Plane } from 'lucide-react';
 
 interface PassengerDetailsProps {
   passenger: Passenger;
@@ -23,7 +23,7 @@ export default function PassengerDetails({ passenger, onClose }: PassengerDetail
       colorClass: 'text-blue-600 bg-blue-50 border-blue-100',
     },
     {
-      label: '২. মেডিকেল পরীক্ষা',
+      label: '২. মেডিকেল টেস্ট',
       sublabel: 'Medical Check (GAMCA)',
       date: passenger.medicalDate,
       expiryDate: passenger.medicalExpiryDate,
@@ -33,35 +33,8 @@ export default function PassengerDetails({ passenger, onClose }: PassengerDetail
       colorClass: 'text-indigo-600 bg-indigo-50 border-indigo-100',
     },
     {
-      label: '৩. মুফা প্রসেস',
-      sublabel: 'MOFA Visa Number',
-      date: passenger.mofaDate,
-      expiryDate: passenger.mofaExpiryDate,
-      status: passenger.mofaStatus || 'Pending',
-      remarks: passenger.mofaNumber ? `Mofa #: ${passenger.mofaNumber}` : undefined,
-      icon: Globe,
-      colorClass: 'text-emerald-600 bg-emerald-50 border-emerald-100',
-    },
-    {
-      label: '৪. ভিসা স্ট্যাম্পিং',
-      sublabel: 'Visa Stamping',
-      date: passenger.visaStampingDate,
-      expiryDate: passenger.visaExpiryDate,
-      status: passenger.visaStampingStatus || 'Pending',
-      icon: ClipboardCheck,
-      colorClass: 'text-purple-600 bg-purple-50 border-purple-100',
-    },
-    {
-      label: '৫. ফিঙ্গারপ্রিন্ট',
-      sublabel: 'Fingerprint & Bio',
-      date: passenger.fingerprintDate,
-      status: passenger.fingerprintStatus || 'Pending',
-      icon: Fingerprint,
-      colorClass: 'text-pink-600 bg-pink-50 border-pink-100',
-    },
-    {
-      label: '৬. তাকামুল পেশা',
-      sublabel: 'Taqamul Profession Verification',
+      label: '৩. তাকামুল পেশা',
+      sublabel: 'Taqamul Skill Test',
       date: passenger.taqamulDate,
       expiryDate: passenger.taqamulExpiryDate,
       status: passenger.taqamulStatus || 'Pending',
@@ -70,21 +43,70 @@ export default function PassengerDetails({ passenger, onClose }: PassengerDetail
       colorClass: 'text-orange-600 bg-orange-50 border-orange-100',
     },
     {
-      label: '৭. পুলিশ ক্লিয়ারেন্স',
-      sublabel: 'Police Clearance',
-      date: passenger.policeClearanceDate,
+      label: '৪. মুফা প্রসেস',
+      sublabel: 'MOFA Visa Number',
+      date: passenger.mofaDate,
+      expiryDate: passenger.mofaExpiryDate,
+      status: passenger.mofaStatus || 'Pending',
+      remarks: passenger.mofaNumber ? `MF Number: ${passenger.mofaNumber}` : undefined,
+      icon: Globe,
+      colorClass: 'text-emerald-600 bg-emerald-50 border-emerald-100',
+    },
+    {
+      label: '৫. ফিঙ্গারপ্রিন্ট',
+      sublabel: 'Fingerprint & Biometric',
+      date: passenger.fingerprintDate,
+      status: passenger.fingerprintStatus || 'Pending',
+      icon: Fingerprint,
+      colorClass: 'text-pink-600 bg-pink-50 border-pink-100',
+    },
+    {
+      label: '৬. পুলিশ ও ওকে টু বোর্ড',
+      sublabel: 'Police Clearance & OTB',
+      date: passenger.policeClearanceDate ? `পুলিশ ক্লিয়া.: ${passenger.policeClearanceDate}` : undefined,
       expiryDate: passenger.policeClearanceExpiryDate,
-      status: passenger.policeClearanceStatus || 'Pending',
+      status: (passenger.policeClearanceStatus === 'Done' && passenger.okToBoardStatus === 'Done') ? 'Done' : 
+              (passenger.policeClearanceStatus === 'Done' || passenger.okToBoardStatus === 'Done') ? 'In Progress' : 'Pending',
+      remarks: `পুলিশ ক্লিয়ারেন্স: ${passenger.policeClearanceStatus || 'Pending'} | ওকে টু বোর্ড: ${passenger.okToBoardStatus || 'Pending'} ${passenger.okToBoardDate ? `(${passenger.okToBoardDate})` : ''}`,
       icon: ShieldCheck,
+      colorClass: 'text-teal-600 bg-teal-50 border-teal-100',
+    },
+    {
+      label: '৭. BMET Training',
+      sublabel: 'BMET Training Card',
+      date: passenger.bmetTrainingDate,
+      expiryDate: passenger.bmetTrainingExpiryDate,
+      status: passenger.bmetTrainingStatus || 'Pending',
+      remarks: passenger.bmetTrainingRemarks,
+      icon: BookOpen,
+      colorClass: 'text-indigo-600 bg-indigo-50 border-indigo-100',
+    },
+    {
+      label: '৮. ভিসা স্ট্যাম্পিং',
+      sublabel: 'Visa Stamping',
+      date: passenger.visaStampingDate,
+      expiryDate: passenger.visaExpiryDate,
+      status: passenger.visaStampingStatus || 'Pending',
+      icon: ClipboardCheck,
+      colorClass: 'text-purple-600 bg-purple-50 border-purple-100',
+    },
+    {
+      label: '৯. ManPower',
+      sublabel: 'ManPower Smart Card',
+      date: passenger.manpowerDate,
+      status: passenger.manpowerStatus || 'Pending',
+      remarks: passenger.manpowerRemarks,
+      icon: Briefcase,
       colorClass: 'text-amber-600 bg-amber-50 border-amber-100',
     },
     {
-      label: '৮. ওকে টু বোর্ড',
-      sublabel: 'Ok To Board Status',
-      date: passenger.okToBoardDate,
-      status: passenger.okToBoardStatus || 'Pending',
-      icon: Compass,
-      colorClass: 'text-teal-600 bg-teal-50 border-teal-100',
+      label: '১০. Air Ticket',
+      sublabel: 'Air Ticket Booking & Issue',
+      date: passenger.airTicketDate,
+      status: passenger.airTicketStatus || 'Pending',
+      remarks: passenger.airTicketRemarks,
+      icon: Plane,
+      colorClass: 'text-sky-600 bg-sky-50 border-sky-100',
     }
   ];
 

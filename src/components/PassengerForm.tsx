@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Passenger, VisaStatus, TicketStatus, PaymentStatus } from '../types';
-import { Save, X, User, FileText, Phone, MapPin, Calendar, CreditCard, PenTool, ClipboardCheck, Activity, ShieldCheck, Fingerprint, Globe } from 'lucide-react';
+import { Save, X, User, FileText, Phone, MapPin, Calendar, CreditCard, PenTool, ClipboardCheck, Activity, ShieldCheck, Fingerprint, Globe, BookOpen, Briefcase, Plane } from 'lucide-react';
 
 interface PassengerFormProps {
   passenger?: Passenger | null;
@@ -57,6 +57,19 @@ export default function PassengerForm({ passenger, onSubmit, onCancel }: Passeng
   const [okToBoardStatus, setOkToBoardStatus] = useState<'Pending' | 'Done' | 'N/A'>('Pending');
   const [okToBoardDate, setOkToBoardDate] = useState('');
 
+  const [bmetTrainingStatus, setBmetTrainingStatus] = useState<'Pending' | 'Done' | 'N/A'>('Pending');
+  const [bmetTrainingDate, setBmetTrainingDate] = useState('');
+  const [bmetTrainingExpiryDate, setBmetTrainingExpiryDate] = useState('');
+  const [bmetTrainingRemarks, setBmetTrainingRemarks] = useState('');
+
+  const [manpowerStatus, setManpowerStatus] = useState<'Pending' | 'Done' | 'N/A'>('Pending');
+  const [manpowerDate, setManpowerDate] = useState('');
+  const [manpowerRemarks, setManpowerRemarks] = useState('');
+
+  const [airTicketStatus, setAirTicketStatus] = useState<'Pending' | 'Done' | 'N/A'>('Pending');
+  const [airTicketDate, setAirTicketDate] = useState('');
+  const [airTicketRemarks, setAirTicketRemarks] = useState('');
+
   // If editing, fill in the existing passenger details
   useEffect(() => {
     if (passenger) {
@@ -100,6 +113,16 @@ export default function PassengerForm({ passenger, onSubmit, onCancel }: Passeng
       setPoliceClearanceExpiryDate(passenger.policeClearanceExpiryDate || '');
       setOkToBoardStatus(passenger.okToBoardStatus || 'Pending');
       setOkToBoardDate(passenger.okToBoardDate || '');
+      setBmetTrainingStatus(passenger.bmetTrainingStatus || 'Pending');
+      setBmetTrainingDate(passenger.bmetTrainingDate || '');
+      setBmetTrainingExpiryDate(passenger.bmetTrainingExpiryDate || '');
+      setBmetTrainingRemarks(passenger.bmetTrainingRemarks || '');
+      setManpowerStatus(passenger.manpowerStatus || 'Pending');
+      setManpowerDate(passenger.manpowerDate || '');
+      setManpowerRemarks(passenger.manpowerRemarks || '');
+      setAirTicketStatus(passenger.airTicketStatus || 'Pending');
+      setAirTicketDate(passenger.airTicketDate || '');
+      setAirTicketRemarks(passenger.airTicketRemarks || '');
     } else {
       // Reset form states for clear creation
       setName('');
@@ -140,6 +163,16 @@ export default function PassengerForm({ passenger, onSubmit, onCancel }: Passeng
       setPoliceClearanceExpiryDate('');
       setOkToBoardStatus('Pending');
       setOkToBoardDate('');
+      setBmetTrainingStatus('Pending');
+      setBmetTrainingDate('');
+      setBmetTrainingExpiryDate('');
+      setBmetTrainingRemarks('');
+      setManpowerStatus('Pending');
+      setManpowerDate('');
+      setManpowerRemarks('');
+      setAirTicketStatus('Pending');
+      setAirTicketDate('');
+      setAirTicketRemarks('');
     }
   }, [passenger]);
 
@@ -207,6 +240,16 @@ export default function PassengerForm({ passenger, onSubmit, onCancel }: Passeng
       policeClearanceExpiryDate: policeClearanceExpiryDate || undefined,
       okToBoardStatus,
       okToBoardDate: okToBoardDate || undefined,
+      bmetTrainingStatus,
+      bmetTrainingDate: bmetTrainingDate || undefined,
+      bmetTrainingExpiryDate: bmetTrainingExpiryDate || undefined,
+      bmetTrainingRemarks: bmetTrainingRemarks || undefined,
+      manpowerStatus,
+      manpowerDate: manpowerDate || undefined,
+      manpowerRemarks: manpowerRemarks || undefined,
+      airTicketStatus,
+      airTicketDate: airTicketDate || undefined,
+      airTicketRemarks: airTicketRemarks || undefined,
     });
   };
 
@@ -512,13 +555,66 @@ export default function PassengerForm({ passenger, onSubmit, onCancel }: Passeng
               </div>
             </div>
 
-            {/* Step 3: Mofa Process */}
+            {/* Step 3: Taqamul Skill Test */}
+            <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-xs space-y-3">
+              <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                <div className="p-1.5 rounded-lg bg-orange-50 text-orange-600">
+                  <Fingerprint className="h-4 w-4" />
+                </div>
+                <span className="text-xs font-bold text-slate-800">৩. তাকামুল পেশা (Taqamul Skill Test)</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">টেস্ট অবস্থা (Status)</label>
+                  <select
+                    value={taqamulStatus}
+                    onChange={(e) => setTaqamulStatus(e.target.value as any)}
+                    className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                  >
+                    <option value="Pending">Pending</option>
+                    <option value="Done">Done (উত্তীর্ণ)</option>
+                    <option value="Failed">Failed (ফেইল)</option>
+                    <option value="N/A">N/A</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">টেস্টের তারিখ (Date)</label>
+                  <input
+                    type="date"
+                    value={taqamulDate}
+                    onChange={(e) => setTaqamulDate(e.target.value)}
+                    className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-500 mb-1">মনোনীত পেশা (Taqamul Profession)</label>
+                <input
+                  type="text"
+                  value={taqamulProfession}
+                  onChange={(e) => setTaqamulProfession(e.target.value)}
+                  placeholder="যেমন: Plumber, Electrician"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-500 mb-1">মেয়ার শেষ তারিখ (Expiry Date)</label>
+                <input
+                  type="date"
+                  value={taqamulExpiryDate}
+                  onChange={(e) => setTaqamulExpiryDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                />
+              </div>
+            </div>
+
+            {/* Step 4: Mofa Process */}
             <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-xs space-y-3">
               <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
                 <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600">
                   <Globe className="h-4 w-4" />
                 </div>
-                <span className="text-xs font-bold text-slate-800">৩. মুফা প্রসেস (Mofa Process)</span>
+                <span className="text-xs font-bold text-slate-800">৪. মুফা প্রসেস (Mofa Process)</span>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
@@ -566,49 +662,7 @@ export default function PassengerForm({ passenger, onSubmit, onCancel }: Passeng
               </div>
             </div>
 
-            {/* Step 4: Visa Stamping */}
-            <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-xs space-y-3">
-              <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-                <div className="p-1.5 rounded-lg bg-purple-50 text-purple-600">
-                  <ClipboardCheck className="h-4 w-4" />
-                </div>
-                <span className="text-xs font-bold text-slate-800">৪. ভিসা স্ট্যাম্পিং (Stamping)</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">স্ট্যাম্পিং অবস্থা</label>
-                  <select
-                    value={visaStampingStatus}
-                    onChange={(e) => setVisaStampingStatus(e.target.value as any)}
-                    className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
-                  >
-                    <option value="Pending">Pending</option>
-                    <option value="Done">Done (স্ট্যাম্পড)</option>
-                    <option value="N/A">N/A</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">সম্পন্নের তারিখ</label>
-                  <input
-                    type="date"
-                    value={visaStampingDate}
-                    onChange={(e) => setVisaStampingDate(e.target.value)}
-                    className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-500 mb-1">ভিসার মেয়াদ শেষ তারিখ (Visa Expiry)</label>
-                <input
-                  type="date"
-                  value={visaExpiryDate}
-                  onChange={(e) => setVisaExpiryDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
-                />
-              </div>
-            </div>
-
-            {/* Step 5: Fingerprint & Biometric */}
+            {/* Step 5: Fingerprint */}
             <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-xs space-y-3">
               <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
                 <div className="p-1.5 rounded-lg bg-pink-50 text-pink-600">
@@ -641,66 +695,13 @@ export default function PassengerForm({ passenger, onSubmit, onCancel }: Passeng
               </div>
             </div>
 
-            {/* Step 6: Taqamul Profession */}
-            <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-xs space-y-3">
-              <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-                <div className="p-1.5 rounded-lg bg-amber-50 text-amber-600">
-                  <Fingerprint className="h-4 w-4 text-amber-700 animate-pulse" />
-                </div>
-                <span className="text-xs font-bold text-slate-800">৬. তাকামুল পেশা (Taqamul Skill Test)</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">টেস্ট অবস্থা (Status)</label>
-                  <select
-                    value={taqamulStatus}
-                    onChange={(e) => setTaqamulStatus(e.target.value as any)}
-                    className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
-                  >
-                    <option value="Pending">Pending</option>
-                    <option value="Done">Done (উত্তীর্ণ)</option>
-                    <option value="Failed">Failed (ফেইল)</option>
-                    <option value="N/A">N/A</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">টেস্টের তারিখ (Date)</label>
-                  <input
-                    type="date"
-                    value={taqamulDate}
-                    onChange={(e) => setTaqamulDate(e.target.value)}
-                    className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-500 mb-1">মনোনীত পেশা (Taqamul Profession)</label>
-                <input
-                  type="text"
-                  value={taqamulProfession}
-                  onChange={(e) => setTaqamulProfession(e.target.value)}
-                  placeholder="যেমন: Plumber, Electrician"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-500 mb-1">মেয়াদ শেষ তারিখ (Expiry Date)</label>
-                <input
-                  type="date"
-                  value={taqamulExpiryDate}
-                  onChange={(e) => setTaqamulExpiryDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
-                />
-              </div>
-            </div>
-
-            {/* Step 7: Police Clearance & Ok To Board */}
+            {/* Step 6: Police & Ok To Board */}
             <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-xs space-y-3">
               <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
                 <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600">
                   <ShieldCheck className="h-4 w-4" />
                 </div>
-                <span className="text-xs font-bold text-slate-800">৭. পুলিশ ও ওকে টু বোর্ড</span>
+                <span className="text-xs font-bold text-slate-800">৬. পুলিশ ও ওকে টু বোর্ড</span>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
@@ -757,6 +758,186 @@ export default function PassengerForm({ passenger, onSubmit, onCancel }: Passeng
                   value={okToBoardDate}
                   onChange={(e) => setOkToBoardDate(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                />
+              </div>
+            </div>
+
+            {/* Step 7: BMET Training */}
+            <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-xs space-y-3">
+              <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                <div className="p-1.5 rounded-lg bg-teal-50 text-teal-600">
+                  <BookOpen className="h-4 w-4" />
+                </div>
+                <span className="text-xs font-bold text-slate-800">৭. BMET Training</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">ট্রেনিং অবস্থা</label>
+                  <select
+                    value={bmetTrainingStatus}
+                    onChange={(e) => setBmetTrainingStatus(e.target.value as any)}
+                    className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                  >
+                    <option value="Pending">Pending</option>
+                    <option value="Done">Done (সম্পন্ন)</option>
+                    <option value="N/A">N/A</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">শুরুর তারিখ</label>
+                  <input
+                    type="date"
+                    value={bmetTrainingDate}
+                    onChange={(e) => setBmetTrainingDate(e.target.value)}
+                    className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-500 mb-1">মেয়াদ শেষ তারিখ</label>
+                <input
+                  type="date"
+                  value={bmetTrainingExpiryDate}
+                  onChange={(e) => setBmetTrainingExpiryDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-500 mb-1">ট্রেনিং মন্তব্য</label>
+                <input
+                  type="text"
+                  value={bmetTrainingRemarks}
+                  onChange={(e) => setBmetTrainingRemarks(e.target.value)}
+                  placeholder="যেমন: ৩ দিনের ওরিয়েন্টেশন কোর্স"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                />
+              </div>
+            </div>
+
+            {/* Step 8: Visa Stamping */}
+            <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-xs space-y-3">
+              <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                <div className="p-1.5 rounded-lg bg-purple-50 text-purple-600">
+                  <ClipboardCheck className="h-4 w-4" />
+                </div>
+                <span className="text-xs font-bold text-slate-800">৮. ভিসা স্ট্যাম্পিং (Stamping)</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">স্ট্যাম্পিং অবস্থা</label>
+                  <select
+                    value={visaStampingStatus}
+                    onChange={(e) => setVisaStampingStatus(e.target.value as any)}
+                    className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                  >
+                    <option value="Pending">Pending</option>
+                    <option value="Done">Done (স্ট্যাম্পড)</option>
+                    <option value="N/A">N/A</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">সম্পন্নের তারিখ</label>
+                  <input
+                    type="date"
+                    value={visaStampingDate}
+                    onChange={(e) => setVisaStampingDate(e.target.value)}
+                    className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-500 mb-1">ভিসার মেয়াদ শেষ তারিখ (Visa Expiry)</label>
+                <input
+                  type="date"
+                  value={visaExpiryDate}
+                  onChange={(e) => setVisaExpiryDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                />
+              </div>
+            </div>
+
+            {/* Step 9: ManPower */}
+            <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-xs space-y-3">
+              <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                <div className="p-1.5 rounded-lg bg-amber-50 text-amber-700 font-bold">
+                  <Briefcase className="h-4 w-4" />
+                </div>
+                <span className="text-xs font-bold text-slate-800">৯. ManPower</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">ম্যানপাওয়ার অবস্থা</label>
+                  <select
+                    value={manpowerStatus}
+                    onChange={(e) => setManpowerStatus(e.target.value as any)}
+                    className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                  >
+                    <option value="Pending">Pending</option>
+                    <option value="Done">Done (ওকে)</option>
+                    <option value="N/A">N/A</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">সম্পন্নের তারিখ</label>
+                  <input
+                    type="date"
+                    value={manpowerDate}
+                    onChange={(e) => setManpowerDate(e.target.value)}
+                    className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-500 mb-1">ম্যানপাওয়ার মন্তব্য</label>
+                <input
+                  type="text"
+                  value={manpowerRemarks}
+                  onChange={(e) => setManpowerRemarks(e.target.value)}
+                  placeholder="যেমন: স্মার্ট কার্ড সম্পন্ন"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                />
+              </div>
+            </div>
+
+            {/* Step 10: Air Ticket */}
+            <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-xs space-y-3">
+              <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                <div className="p-1.5 rounded-lg bg-sky-50 text-sky-600">
+                  <Plane className="h-4 w-4" />
+                </div>
+                <span className="text-xs font-bold text-slate-800">১০. Air Ticket</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">টিকিট অবস্থা</label>
+                  <select
+                    value={airTicketStatus}
+                    onChange={(e) => setAirTicketStatus(e.target.value as any)}
+                    className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                  >
+                    <option value="Pending">Pending</option>
+                    <option value="Done">Done (ইস্যুড)</option>
+                    <option value="N/A">N/A</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">ইস্যুর তারিখ</label>
+                  <input
+                    type="date"
+                    value={airTicketDate}
+                    onChange={(e) => setAirTicketDate(e.target.value)}
+                    className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-500 mb-1">টিকিট মন্তব্য</label>
+                <input
+                  type="text"
+                  value={airTicketRemarks}
+                  onChange={(e) => setAirTicketRemarks(e.target.value)}
+                  placeholder="যেমন: ওয়ান ওয়ে টিকিট সম্পন্ন"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
                 />
               </div>
             </div>

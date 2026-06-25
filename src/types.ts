@@ -53,6 +53,19 @@ export interface Passenger {
   okToBoardStatus?: 'Pending' | 'Done' | 'N/A'; // ওকে টু বোর্ড অবস্থা
   okToBoardDate?: string; // ওকে টু বোর্ড সম্পন্ন হওয়ার তারিখ
 
+  bmetTrainingStatus?: 'Pending' | 'Done' | 'N/A'; // BMET Training অবস্থা
+  bmetTrainingDate?: string; // BMET Training শুরুর তারিখ
+  bmetTrainingExpiryDate?: string; // BMET Training মেয়াদ শেষ তারিখ
+  bmetTrainingRemarks?: string; // BMET Training মন্তব্য
+
+  manpowerStatus?: 'Pending' | 'Done' | 'N/A'; // ManPower অবস্থা
+  manpowerDate?: string; // ManPower শুরুর তারিখ
+  manpowerRemarks?: string; // ManPower মন্তব্য
+
+  airTicketStatus?: 'Pending' | 'Done' | 'N/A'; // Air Ticket অবস্থা
+  airTicketDate?: string; // Air Ticket শুরুর তারিখ
+  airTicketRemarks?: string; // Air Ticket মন্তব্য
+
   createdAt: string;
   updatedAt: string;
 }
