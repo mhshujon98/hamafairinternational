@@ -5,7 +5,6 @@ import Dashboard from './components/Dashboard';
 import PassengerList from './components/PassengerList';
 import PassengerForm from './components/PassengerForm';
 import PassengerDetails from './components/PassengerDetails';
-import BloggerGuide from './components/BloggerGuide';
 import { 
   Compass, 
   Database, 
@@ -18,12 +17,14 @@ import {
   FileCode2,
   Calendar,
   Sparkles,
-  RefreshCw
+  RefreshCw,
+  Plane,
+  PlaneTakeoff
 } from 'lucide-react';
 
 export default function App() {
   const [passengers, setPassengers] = useState<Passenger[]>([]);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'database' | 'add' | 'blogger'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'database' | 'add'>('dashboard');
   
   // Search & Detail state
   const [headerSearch, setHeaderSearch] = useState('');
@@ -118,16 +119,16 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 gap-4">
             
-            {/* Logo/Agency Identity */}
+            {/* Logo/Agency Identity with Airplane Icon */}
             <div className="flex items-center gap-3 shrink-0">
-              <div className="p-2 bg-blue-600 rounded-xl flex items-center justify-center animate-spin-slow text-white">
-                <Compass className="h-5 w-5" />
+              <div className="p-2.5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-white shadow-md shadow-blue-500/20 hover:scale-105 transition-transform duration-300">
+                <PlaneTakeoff className="h-5.5 w-5.5 animate-bounce" />
               </div>
               <div>
-                <h1 className="text-sm font-black tracking-tight uppercase font-mono text-white leading-none">
-                  Hama Fair International
+                <h1 className="text-sm sm:text-base font-black tracking-wider uppercase font-sans text-white leading-none flex items-center gap-1">
+                  <span>Hamaf Air International</span>
                 </h1>
-                <span className="text-[10px] text-blue-400 font-semibold uppercase tracking-wider">
+                <span className="text-[10px] text-blue-400 font-bold uppercase tracking-widest mt-1 block">
                   Travel Agency Database
                 </span>
               </div>
@@ -255,37 +256,60 @@ export default function App() {
       </div>
 
       {/* 3. HERO SUB-HEADER DESIGN */}
-      <div className="bg-slate-900 text-white pb-24 pt-6 px-4 sm:px-6 lg:px-8 border-b border-slate-800 relative overflow-hidden">
+      <div className="bg-slate-900 text-white pb-24 pt-8 px-4 sm:px-6 lg:px-8 border-b border-slate-800 relative overflow-hidden">
         {/* Background mesh glow */}
         <div className="absolute -top-40 -left-40 w-96 h-96 bg-blue-600 rounded-full blur-3xl opacity-20 pointer-events-none"></div>
         <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-indigo-600 rounded-full blur-3xl opacity-20 pointer-events-none"></div>
 
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-          <div>
-            <div className="flex items-center gap-1.5 bg-blue-500/10 text-blue-400 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider w-fit mb-3 border border-blue-500/20">
-              <Sparkles className="h-3.5 w-3.5" />
-              <span>হ্যামা ফেয়ার ইন্টারন্যাশনাল • ট্রাভেল ও পাসপোর্ট ডাটাবেজ</span>
+        {/* Dynamic flying airplane line silhouette in the background */}
+        <div className="absolute right-10 bottom-10 opacity-10 hidden lg:block pointer-events-none select-none">
+          <svg width="400" height="150" viewBox="0 0 400 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 130 C 150 90, 250 30, 380 20" stroke="white" strokeWidth="2" strokeDasharray="6 6" />
+            <g transform="translate(370, 10) rotate(-15)">
+              <path d="M0 15 L15 0 L35 15 L20 18 L15 35 L12 18 Z" fill="white" />
+            </g>
+          </svg>
+        </div>
+
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-8 relative z-10">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 bg-blue-500/10 text-blue-400 px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-widest w-fit border border-blue-500/20 shadow-xs">
+              <Plane className="h-4 w-4 animate-pulse text-blue-400" />
+              <span>Hamaf Air International Travel Agency</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-              যাত্রী তথ্য সংরক্ষণ ও ট্র্যাকিং প্ল্যাটফর্ম
-            </h2>
-            <p className="text-slate-400 text-xs sm:text-sm mt-1 max-w-xl leading-relaxed">
-              যাত্রীদের পাসপোর্ট নম্বর, টিকিট কোড, ভিসা স্ট্যাটাস ও পেমেন্টের হিসাব এক জায়গায় সংরক্ষণ করুন এবং যেকোনো সময় নাম দিয়ে সার্চ করে মুহূর্তেই বিস্তারিত খুঁজে বের করুন।
+            
+            {/* Main Styled Heading with Airplane Graphic */}
+            <div className="space-y-2">
+              <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight flex flex-wrap items-center gap-x-4 gap-y-2">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-200 to-white">
+                  Hamaf Air International
+                </span>
+                <span className="inline-flex items-center justify-center p-1.5 bg-blue-600/30 text-blue-400 rounded-full border border-blue-500/30 animate-pulse">
+                  <PlaneTakeoff className="h-6 w-6 sm:h-8 sm:w-8" />
+                </span>
+              </h2>
+              <h3 className="text-lg sm:text-xl font-bold text-slate-300">
+                যাত্রী তথ্য সংরক্ষণ, অনুসন্ধান ও ট্র্যাকিং ডাটাবেজ
+              </h3>
+            </div>
+
+            <p className="text-slate-400 text-xs sm:text-sm max-w-2xl leading-relaxed">
+              নিরাপদ ক্লাউড ডাটাবেজ সিস্টেমে যাত্রীদের পাসপোর্ট নম্বর, ভিসা এবং টিকিটের তথ্য স্বয়ংক্রিয়ভাবে তালিকাভুক্ত করুন। উপরের সার্চবারে যেকোনো যাত্রীর নাম লিখে এক ক্লিকে বিস্তারিত খুঁজে নিন।
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2 shrink-0">
+          <div className="flex flex-wrap gap-2 shrink-0 self-end md:self-center">
             <button
               onClick={() => setActiveTab('add')}
-              className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all shadow-md shadow-blue-900/20 cursor-pointer border border-blue-500/20"
+              className="px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold flex items-center gap-2 transition-all shadow-lg shadow-blue-900/30 cursor-pointer border border-blue-500/30 transform hover:-translate-y-0.5"
             >
-              <PlusCircle className="h-4 w-4" />
+              <PlusCircle className="h-4.5 w-4.5" />
               <span>নতুন যাত্রী নিবন্ধন করুন</span>
             </button>
 
             <button
               onClick={handleResetToDefaults}
-              className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700/80 text-slate-300 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer border border-slate-700"
+              className="px-5 py-3 bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border border-slate-700"
             >
               <RefreshCw className="h-4 w-4 text-slate-400" />
               <span>রিসেট ডেমো ডেটা (Reset)</span>
@@ -297,54 +321,116 @@ export default function App() {
       {/* 4. MAIN WORKSPACE CONTAINER */}
       <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 -mt-16 pb-12 relative z-20">
         
-        {/* Navigation Tabs Bar */}
-        <div className="bg-white rounded-2xl p-2.5 shadow-sm border border-gray-100 flex flex-wrap gap-1.5 mb-6">
+        {/* Navigation Tabs Bar - Redesigned as Beautiful interactive Action Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          {/* Card 1: Dashboard */}
           <button
             onClick={() => { setActiveTab('dashboard'); setEditingPassenger(null); }}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+            className={`group text-left p-5 rounded-2xl border transition-all duration-300 cursor-pointer relative overflow-hidden ${
               activeTab === 'dashboard'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100/50'
+                ? 'bg-gradient-to-br from-blue-500/10 via-indigo-500/5 to-white border-blue-500/50 shadow-md shadow-blue-500/5 ring-1 ring-blue-500/30'
+                : 'bg-white hover:bg-slate-50/50 border-gray-100 hover:border-gray-200 shadow-sm'
             }`}
           >
-            <LayoutDashboard className="h-4 w-4" />
-            <span>সারাংশ ড্যাশবোর্ড (Dashboard)</span>
+            {/* Background absolute subtle glow for active */}
+            {activeTab === 'dashboard' && (
+              <div className="absolute right-0 top-0 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl pointer-events-none"></div>
+            )}
+            
+            <div className="flex items-start gap-4">
+              <div className={`p-3 rounded-xl transition-all duration-300 ${
+                activeTab === 'dashboard'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                  : 'bg-blue-50 text-blue-600 group-hover:bg-blue-100'
+              }`}>
+                <LayoutDashboard className="h-5.5 w-5.5" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className={`text-sm sm:text-base font-bold transition-colors duration-200 ${
+                    activeTab === 'dashboard' ? 'text-slate-900' : 'text-slate-700'
+                  }`}>সারাংশ ড্যাশবোর্ড</span>
+                  <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 font-semibold uppercase tracking-wider font-mono">Live</span>
+                </div>
+                <p className="text-xs text-slate-400 font-sans font-medium">সার্বিক অবস্থা, রিয়েল-টাইম চার্ট ও পরিসংখ্যান</p>
+              </div>
+            </div>
           </button>
 
+          {/* Card 2: Passenger Database */}
           <button
             onClick={() => { setActiveTab('database'); setEditingPassenger(null); }}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+            className={`group text-left p-5 rounded-2xl border transition-all duration-300 cursor-pointer relative overflow-hidden ${
               activeTab === 'database'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100/50'
+                ? 'bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-white border-emerald-500/50 shadow-md shadow-emerald-500/5 ring-1 ring-emerald-500/30'
+                : 'bg-white hover:bg-slate-50/50 border-gray-100 hover:border-gray-200 shadow-sm'
             }`}
           >
-            <Database className="h-4 w-4" />
-            <span>যাত্রী ডাটাবেজ (Passenger List)</span>
+            {/* Background absolute subtle glow for active */}
+            {activeTab === 'database' && (
+              <div className="absolute right-0 top-0 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none"></div>
+            )}
+
+            <div className="flex items-start gap-4">
+              <div className={`p-3 rounded-xl transition-all duration-300 ${
+                activeTab === 'database'
+                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/20'
+                  : 'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-100'
+              }`}>
+                <Database className="h-5.5 w-5.5" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className={`text-sm sm:text-base font-bold transition-colors duration-200 ${
+                    activeTab === 'database' ? 'text-slate-900' : 'text-slate-700'
+                  }`}>যাত্রী ডাটাবেজ</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 font-bold font-mono">
+                    {passengers.length} জন
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 font-sans font-medium">পাসপোর্ট, ভিসা ও টিকিট অনুসন্ধান ও ট্র্যাকিং</p>
+              </div>
+            </div>
           </button>
 
+          {/* Card 3: Form */}
           <button
             onClick={() => { setActiveTab('add'); setEditingPassenger(null); }}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+            className={`group text-left p-5 rounded-2xl border transition-all duration-300 cursor-pointer relative overflow-hidden ${
               activeTab === 'add' || editingPassenger !== null
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100/50'
+                ? 'bg-gradient-to-br from-purple-500/10 via-pink-500/5 to-white border-purple-500/50 shadow-md shadow-purple-500/5 ring-1 ring-purple-500/30'
+                : 'bg-white hover:bg-slate-50/50 border-gray-100 hover:border-gray-200 shadow-sm'
             }`}
           >
-            <PlusCircle className="h-4 w-4" />
-            <span>{editingPassenger ? 'যাত্রী তথ্য সংশোধন (Edit)' : 'যাত্রী তথ্য ফরম (Submit Form)'}</span>
-          </button>
+            {/* Background absolute subtle glow for active */}
+            {(activeTab === 'add' || editingPassenger !== null) && (
+              <div className="absolute right-0 top-0 w-24 h-24 bg-purple-500/10 rounded-full blur-2xl pointer-events-none"></div>
+            )}
 
-          <button
-            onClick={() => { setActiveTab('blogger'); setEditingPassenger(null); }}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-              activeTab === 'blogger'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100/50'
-            }`}
-          >
-            <FileCode2 className="h-4 w-4" />
-            <span>ব্লগার গাইড ও কোড (Blogger Guide)</span>
+            <div className="flex items-start gap-4">
+              <div className={`p-3 rounded-xl transition-all duration-300 ${
+                activeTab === 'add' || editingPassenger !== null
+                  ? 'bg-purple-600 text-white shadow-md shadow-purple-500/20'
+                  : 'bg-purple-50 text-purple-600 group-hover:bg-purple-100'
+              }`}>
+                <PlusCircle className="h-5.5 w-5.5" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className={`text-sm sm:text-base font-bold transition-colors duration-200 ${
+                    (activeTab === 'add' || editingPassenger !== null) ? 'text-slate-900' : 'text-slate-700'
+                  }`}>
+                    {editingPassenger ? 'তথ্য সংশোধন' : 'যাত্রী তথ্য ফরম'}
+                  </span>
+                  {editingPassenger && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 font-semibold animate-pulse">Editing</span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-400 font-sans font-medium">
+                  {editingPassenger ? 'যাত্রী বিবরণ সংশোধন বা আপডেট করুন' : 'নতুন ট্রাভেল এন্ট্রি ও পাসপোর্ট ডেটা ফরম'}
+                </p>
+              </div>
+            </div>
           </button>
         </div>
 
@@ -399,10 +485,6 @@ export default function App() {
               }}
             />
           )}
-
-          {activeTab === 'blogger' && (
-            <BloggerGuide />
-          )}
         </div>
       </main>
 
@@ -417,9 +499,9 @@ export default function App() {
       {/* 6. BOTTOM BRAND FOOTER */}
       <footer className="bg-slate-900 border-t border-slate-800 text-slate-400 py-8 text-center text-xs mt-auto font-mono">
         <div className="max-w-7xl mx-auto px-4 space-y-2">
-          <p>© 2026 Hama Fair International Travel Agency. All Rights Reserved.</p>
+          <p>© 2026 Hamaf Air International Travel Agency. All Rights Reserved.</p>
           <p className="text-slate-600 text-[10px]">
-            Designed for hamafairinternational.blogspot.com • Persistent Client-Cloud Sync System
+            Designed for hamafairinternational.vercel.app • Persistent Client-Cloud Sync System
           </p>
         </div>
       </footer>

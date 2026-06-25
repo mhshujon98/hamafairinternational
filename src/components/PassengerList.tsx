@@ -103,7 +103,7 @@ export default function PassengerList({ passengers, onView, onEdit, onDelete, on
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `hama_fair_passengers_backup_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `hamaf_air_passengers_backup_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -363,7 +363,7 @@ export default function PassengerList({ passengers, onView, onEdit, onDelete, on
       {/* Row counter */}
       <div className="bg-gray-50 px-5 py-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500 font-mono">
         <span>সর্বমোট {filteredPassengers.length} জন যাত্রীর তথ্য ফিল্টার করা হয়েছে</span>
-        <span>Hama Fair International</span>
+        <span>Hamaf Air International</span>
       </div>
 
     </div>
