@@ -1004,9 +1004,13 @@ export default function PassengerForm({ passenger, onSubmit, onCancel }: Passeng
                 />
               </div>
               {passenger?.payments && passenger.payments.length > 0 && (
-                <p className="text-[10px] text-amber-600 mt-1 font-medium">
-                  ⚠️ ধাপে ধাপে জমার রশিদ তালিকা থাকায় পরিশোধিত টাকা পরিবর্তন করতে প্রোফাইল ভিউ থেকে নতুন রশিদ এন্ট্রি করুন।
-                </p>
+                <div className="mt-1.5 p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-[11px] text-amber-800 leading-relaxed font-medium">
+                  <span className="font-bold block text-amber-900 mb-0.5">⚠️ নোটিশ (Notice):</span>
+                  ইতিমধ্যেই এই যাত্রীর ধাপে ধাপে জমার রশিদ যুক্ত রয়েছে। তাই এখানে সরাসরি পরিবর্তন করা যাবে না।
+                  <div className="mt-1 pl-2 border-l-2 border-amber-400 text-amber-700">
+                    <strong>কোথায় পাবেন?</strong> যাত্রী তালিকা (Passenger List) থেকে এই যাত্রীর পাশে থাকা <strong className="bg-amber-100 px-1 rounded">"চোখের আইকন 👁️" (View Profile)</strong> বাটনে ক্লিক করুন। এরপর নিচের দিকে <strong className="bg-amber-100 px-1 rounded">"নতুন জমা রশিদ যোগ করুন"</strong> বাটনে ক্লিক করে নতুন রশিদ এন্ট্রি করতে পারবেন।
+                  </div>
+                </div>
               )}
             </div>
 

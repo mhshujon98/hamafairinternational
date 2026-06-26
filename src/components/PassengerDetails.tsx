@@ -318,6 +318,8 @@ export default function PassengerDetails({ passenger, onClose, onUpdatePassenger
     }
 
     const bnWords = numberToBanglaWords(pay.amount);
+    const totalPaid = (passenger.payments || []).reduce((sum: number, p: any) => sum + p.amount, 0);
+    const totalDue = Math.max(0, passenger.totalAmount - totalPaid);
 
     printWindow.document.write('<html><head><title>Money Receipt - Hamaf Air International</title>');
     printWindow.document.write('<style>');
@@ -361,6 +363,8 @@ export default function PassengerDetails({ passenger, onClose, onUpdatePassenger
         margin-bottom: 25px;
       }
       .logo-details {
+        display: flex;
+        align-items: center;
         text-align: left;
       }
       .agency-title {
@@ -507,9 +511,12 @@ export default function PassengerDetails({ passenger, onClose, onUpdatePassenger
         
         <div class="header-container">
           <div class="logo-details">
-            <h1 class="agency-title">Hamaf Air International</h1>
-            <p class="agency-subtitle">Hajj, Umrah & Travel Agency (হজ্জ, উমরাহ ও ট্রাভেল এজেন্ট)</p>
-            <p class="agency-contact">Dhaka, Bangladesh • Phone: ${passenger.phone ? '+88' + passenger.phone : '+880XXXXXXXXXX'}</p>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 42px; height: 42px; color: #1e3a8a; margin-right: 14px; transform: rotate(45deg); flex-shrink: 0;"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+            <div>
+              <h1 class="agency-title">Hamaf Air International</h1>
+              <p class="agency-subtitle">Hajj, Umrah & Travel Agency (হজ্জ, উমরাহ ও ট্রাভেল এজেন্ট)</p>
+              <p class="agency-contact">Dhaka, Bangladesh • Phone: ${passenger.phone ? '+88' + passenger.phone : '+880XXXXXXXXXX'}</p>
+            </div>
           </div>
           <div class="receipt-title-box">
             <div class="receipt-badge">Money Receipt</div>
@@ -570,11 +577,11 @@ export default function PassengerDetails({ passenger, onClose, onUpdatePassenger
               </tr>
               <tr>
                 <td>সর্বমোট জমা (Total Paid):</td>
-                <td style="text-align: right; font-family: monospace;">৳ ${passenger.amountPaid.toLocaleString('bn-BD')}</td>
+                <td style="text-align: right; font-family: monospace;">৳ ${totalPaid.toLocaleString('bn-BD')}</td>
               </tr>
               <tr class="total-row">
                 <td>অবশিষ্ট বকেয়া (Total Due):</td>
-                <td style="text-align: right; font-family: monospace; font-weight: bold;">৳ ${passenger.amountDue.toLocaleString('bn-BD')}</td>
+                <td style="text-align: right; font-family: monospace; font-weight: bold;">৳ ${totalDue.toLocaleString('bn-BD')}</td>
               </tr>
             </table>
           </div>
@@ -587,6 +594,695 @@ export default function PassengerDetails({ passenger, onClose, onUpdatePassenger
 
         <div class="print-footer">
           Hamaf Air International-এর উপর আস্থা রাখার জন্য ধন্যবাদ। আপনার যাত্রা নিরাপদ ও শুভ হোক।
+        </div>
+      </div>
+    `);
+    printWindow.document.write('</body></html>');
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+  };
+
+  // Download/Print All Receipts Summary (সর্বমোট জমার বিবরণী প্রিন্ট)
+  const handlePrintAllReceipts = () => {
+    const printWindow = window.open('', '', 'height=800,width=900');
+    if (!printWindow) {
+      alert('পপআপ উইন্ডো খোলা যায়নি! অনুগ্রহ করে পপআপ ব্লকার বন্ধ করুন।');
+      return;
+    }
+
+    const payments = passenger.payments || [];
+    const totalPaid = payments.reduce((sum: number, p: any) => sum + p.amount, 0);
+    const totalDue = Math.max(0, passenger.totalAmount - totalPaid);
+    const bnTotalPaidWords = numberToBanglaWords(totalPaid);
+
+    printWindow.document.write('<html><head><title>Payment Receipts Summary - Hamaf Air International</title>');
+    printWindow.document.write('<style>');
+    printWindow.document.write(`
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Serif+Bengali:wght@400;700&display=swap');
+      body {
+        font-family: 'Inter', 'Noto Serif Bengali', serif;
+        padding: 40px;
+        color: #1e293b;
+        background-color: #ffffff;
+        line-height: 1.5;
+      }
+      .summary-container {
+        border: 4px double #1e3a8a;
+        padding: 35px;
+        position: relative;
+        background-color: #fff;
+        max-width: 800px;
+        margin: 0 auto;
+        box-shadow: 0 0 15px rgba(0,0,0,0.05);
+      }
+      .watermark {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-25deg);
+        font-size: 50px;
+        font-weight: 800;
+        color: rgba(30, 58, 138, 0.03);
+        pointer-events: none;
+        white-space: nowrap;
+        text-transform: uppercase;
+        letter-spacing: 4px;
+      }
+      .header-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 2px solid #1e3a8a;
+        padding-bottom: 15px;
+        margin-bottom: 25px;
+      }
+      .logo-details {
+        display: flex;
+        align-items: center;
+        text-align: left;
+      }
+      .agency-title {
+        font-size: 24px;
+        font-weight: 800;
+        color: #1e3a8a;
+        margin: 0;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      .agency-subtitle {
+        font-size: 12px;
+        color: #475569;
+        margin: 3px 0 0 0;
+        font-weight: 600;
+      }
+      .agency-contact {
+        font-size: 11px;
+        color: #64748b;
+        margin: 3px 0 0 0;
+      }
+      .receipt-title-box {
+        text-align: right;
+      }
+      .receipt-badge {
+        background-color: #1e3a8a;
+        color: #ffffff;
+        padding: 8px 16px;
+        font-size: 13px;
+        font-weight: bold;
+        border-radius: 6px;
+        display: inline-block;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      .passenger-card {
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 15px 20px;
+        margin-bottom: 25px;
+      }
+      .passenger-title {
+        font-size: 14px;
+        font-weight: bold;
+        color: #1e3a8a;
+        border-bottom: 1px solid #cbd5e1;
+        padding-bottom: 6px;
+        margin-bottom: 12px;
+      }
+      .passenger-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      .info-item {
+        font-size: 13px;
+        display: flex;
+        justify-content: space-between;
+        border-bottom: 1px dashed #f1f5f9;
+        padding-bottom: 4px;
+      }
+      .info-label {
+        font-weight: bold;
+        color: #475569;
+      }
+      .info-value {
+        color: #0f172a;
+        font-weight: 600;
+      }
+      .table-title {
+        font-size: 14px;
+        font-weight: bold;
+        color: #1e3a8a;
+        border-bottom: 1px solid #cbd5e1;
+        padding-bottom: 6px;
+        margin-bottom: 15px;
+        margin-top: 25px;
+      }
+      .details-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 25px;
+      }
+      .details-table th, .details-table td {
+        border: 1px solid #e2e8f0;
+        padding: 10px 12px;
+        text-align: left;
+        font-size: 12.5px;
+      }
+      .details-table th {
+        background-color: #f1f5f9;
+        font-weight: bold;
+        color: #1e3a8a;
+      }
+      .amount-in-words {
+        background-color: #f8fafc;
+        border-left: 4px solid #1e3a8a;
+        padding: 12px 15px;
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 30px;
+        color: #0f172a;
+      }
+      .summary-box {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 35px;
+      }
+      .summary-table {
+        width: 320px;
+        border-collapse: collapse;
+      }
+      .summary-table td {
+        padding: 8px 12px;
+        font-size: 13px;
+        border: 1px solid #e2e8f0;
+      }
+      .summary-table .total-row {
+        font-weight: bold;
+        background-color: #f8fafc;
+        color: #1e3a8a;
+      }
+      .signatures-container {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 60px;
+        padding-top: 20px;
+      }
+      .signature-block {
+        text-align: center;
+        width: 200px;
+        border-top: 1px dashed #94a3b8;
+        padding-top: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #475569;
+      }
+      .print-footer {
+        margin-top: 40px;
+        text-align: center;
+        font-size: 11px;
+        color: #94a3b8;
+        border-top: 1px solid #f1f5f9;
+        padding-top: 15px;
+      }
+      @media print {
+        body { padding: 0; background: none; }
+        .summary-container { border: 4px double #1e3a8a; box-shadow: none; margin: 0; max-width: 100%; }
+      }
+    `);
+    printWindow.document.write('</style></head><body>');
+    printWindow.document.write(`
+      <div class="summary-container">
+        <div class="watermark">HAMAF AIR LEDGER</div>
+        
+        <div class="header-container">
+          <div class="logo-details">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 42px; height: 42px; color: #1e3a8a; margin-right: 14px; transform: rotate(45deg); flex-shrink: 0;"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+            <div>
+              <h1 class="agency-title">Hamaf Air International</h1>
+              <p class="agency-subtitle">Hajj, Umrah & Travel Agency (হজ্জ, উমরাহ ও ট্রাভেল এজেন্ট)</p>
+              <p class="agency-contact">Dhaka, Bangladesh • Phone: ${passenger.phone ? '+88' + passenger.phone : '+880XXXXXXXXXX'}</p>
+            </div>
+          </div>
+          <div class="receipt-title-box">
+            <div class="receipt-badge">Receipts Ledger Statement</div>
+          </div>
+        </div>
+
+        <div class="passenger-card">
+          <div class="passenger-title">যাত্রী ও প্যাকেজ বিবরণ (Passenger & Package Details)</div>
+          <div class="passenger-grid">
+            <div>
+              <div class="info-item"><span class="info-label">যাত্রীর নাম (Name):</span> <span class="info-value">${passenger.name}</span></div>
+              <div class="info-item" style="margin-top: 6px;"><span class="info-label">পাসপোর্ট নং (Passport):</span> <span class="info-value" style="font-family: monospace;">${passenger.passportNumber}</span></div>
+              <div class="info-item" style="margin-top: 6px;"><span class="info-label">মোবাইল নং (Phone):</span> <span class="info-value" style="font-family: monospace;">+88${passenger.phone || ''}</span></div>
+            </div>
+            <div>
+              <div class="info-item"><span class="info-label">গন্তব্য (Destination):</span> <span class="info-value">${passenger.destination}</span></div>
+              <div class="info-item" style="margin-top: 6px;"><span class="info-label">ইমেইল (Email):</span> <span class="info-value">${passenger.email || 'N/A'}</span></div>
+              <div class="info-item" style="margin-top: 6px;"><span class="info-label">ভ্রমণের তারিখ (Travel Date):</span> <span class="info-value">${passenger.travelDate || 'N/A'}</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-title">জমাকৃত রশিদের বিবরণী তালিকা (List of Paid Transactions)</div>
+        <table class="details-table">
+          <thead>
+            <tr>
+              <th style="width: 25%;">রশিদ নম্বর (Receipt No)</th>
+              <th style="width: 20%;">তারিখ (Date)</th>
+              <th style="width: 20%;">পরিশোধের মাধ্যম</th>
+              <th style="width: 20%; text-align: right;">পরিমাণ (Amount)</th>
+              <th style="width: 15%;">মন্তব্য (Remarks)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${payments.map((p: any) => `
+              <tr>
+                <td style="font-family: monospace; font-weight: bold; color: #1e3a8a;">${p.receiptNo}</td>
+                <td>${p.date}</td>
+                <td><span style="font-weight: 600;">${p.paymentMethod}</span></td>
+                <td style="text-align: right; font-family: monospace; font-weight: bold;">৳ ${p.amount.toLocaleString('bn-BD')} BDT</td>
+                <td style="font-size: 11px; color: #64748b;">${p.remarks || '-'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+
+        <div class="amount-in-words">
+          সর্বমোট পরিশোধিত টাকা কথায় (In Words): <span style="color: #1e3a8a;">${bnTotalPaidWords}</span>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+          <div style="font-size: 12px; color: #64748b; max-width: 320px; line-height: 1.5;">
+            <strong style="color: #0f172a; display: block; margin-bottom: 4px;">অফিসিয়াল বিবরণী নোট / Official Notes:</strong>
+            • এই বিবরণীটি অত্র যাত্রীর হ্যামাফ এয়ার ইন্টারন্যাশনাল এর নিকট এ পর্যন্ত মোট জমাকৃত অর্থের হিসাবপত্র নির্দেশ করে।<br/>
+            • যেকোনো অসঙ্গতি পরিলক্ষিত হলে অবিলম্বে একাউন্টস শাখায় যোগাযোগ করার অনুরোধ করা হলো।
+          </div>
+          <div class="summary-box">
+            <table class="summary-table">
+              <tr>
+                <td>মোট চুক্তি মূল্য (Total Contract Amount):</td>
+                <td style="text-align: right; font-family: monospace;">৳ ${passenger.totalAmount.toLocaleString('bn-BD')}</td>
+              </tr>
+              <tr>
+                <td>মোট পরিশোধিত (Total Deposited):</td>
+                <td style="text-align: right; font-family: monospace; font-weight: bold; color: #16a34a;">৳ ${totalPaid.toLocaleString('bn-BD')}</td>
+              </tr>
+              <tr class="total-row">
+                <td>অবশিষ্ট মোট বকেয়া (Total Outstanding Due):</td>
+                <td style="text-align: right; font-family: monospace; font-weight: bold; color: #dc2626;">৳ ${totalDue.toLocaleString('bn-BD')}</td>
+              </tr>
+              <tr>
+                <td>মোট রশিদের সংখ্যা (Total Receipts Count):</td>
+                <td style="text-align: right; font-weight: bold;">${payments.length} টি</td>
+              </tr>
+            </table>
+          </div>
+        </div>
+
+        <div class="signatures-container">
+          <div class="signature-block">যাত্রীর স্বাক্ষর<br/><span style="font-size: 10px; color: #94a3b8; font-weight: normal;">(Passenger Signature)</span></div>
+          <div class="signature-block">হিসাবরক্ষক স্বাক্ষর<br/><span style="font-size: 10px; color: #94a3b8; font-weight: normal;">(Accounts Signature)</span></div>
+          <div class="signature-block">অনুমোদিত স্বাক্ষরকারী<br/><span style="font-size: 10px; color: #94a3b8; font-weight: normal;">(Authorized Seal)</span></div>
+        </div>
+
+        <div class="print-footer">
+          Hamaf Air International-এর উপর আস্থা রাখার জন্য ধন্যবাদ। আপনার যাত্রা নিরাপদ ও শুভ হোক।
+        </div>
+      </div>
+    `);
+    printWindow.document.write('</body></html>');
+    printWindow.print();
+    printWindow.close();
+  };
+
+  // Printable A4 Portrait Full Profile (সকল তথ্য এক ক্লিকে প্রিন্ট)
+  const handlePrintA4Profile = () => {
+    const printWindow = window.open('', '', 'height=850,width=900');
+    if (!printWindow) {
+      alert('পপআপ উইন্ডো খোলা যায়নি! অনুগ্রহ করে পপআপ ব্লকার বন্ধ করুন।');
+      return;
+    }
+
+    const payments = passenger.payments || [];
+    const totalPaid = payments.reduce((sum: number, p: any) => sum + p.amount, 0);
+    const totalDue = Math.max(0, passenger.totalAmount - totalPaid);
+    const bnTotalPaidWords = numberToBanglaWords(totalPaid);
+
+    printWindow.document.write('<html><head><title>Passenger Profile - Hamaf Air International</title>');
+    printWindow.document.write('<style>');
+    printWindow.document.write(`
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Serif+Bengali:wght@400;700&display=swap');
+      @page {
+        size: A4 portrait;
+        margin: 15mm;
+      }
+      body {
+        font-family: 'Inter', 'Noto Serif Bengali', sans-serif;
+        padding: 0;
+        margin: 0;
+        color: #1e293b;
+        background-color: #ffffff;
+        line-height: 1.4;
+        font-size: 11.5px;
+      }
+      .profile-container {
+        max-width: 100%;
+        margin: 0 auto;
+        position: relative;
+      }
+      .watermark {
+        position: absolute;
+        top: 45%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-30deg);
+        font-size: 65px;
+        font-weight: 800;
+        color: rgba(30, 58, 138, 0.02);
+        pointer-events: none;
+        white-space: nowrap;
+        text-transform: uppercase;
+        letter-spacing: 5px;
+        z-index: 0;
+      }
+      .header-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 2px solid #1e3a8a;
+        padding-bottom: 12px;
+        margin-bottom: 20px;
+      }
+      .logo-details {
+        display: flex;
+        align-items: center;
+        text-align: left;
+      }
+      .agency-title {
+        font-size: 22px;
+        font-weight: 800;
+        color: #1e3a8a;
+        margin: 0;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .agency-subtitle {
+        font-size: 11px;
+        color: #475569;
+        margin: 2px 0 0 0;
+        font-weight: 600;
+      }
+      .agency-contact {
+        font-size: 10px;
+        color: #64748b;
+        margin: 2px 0 0 0;
+      }
+      .doc-title-box {
+        text-align: right;
+      }
+      .doc-badge {
+        background-color: #1e3a8a;
+        color: #ffffff;
+        padding: 6px 12px;
+        font-size: 11px;
+        font-weight: bold;
+        border-radius: 4px;
+        display: inline-block;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .section-title {
+        font-size: 12.5px;
+        font-weight: bold;
+        color: #1e3a8a;
+        border-bottom: 1px solid #cbd5e1;
+        padding-bottom: 4px;
+        margin-top: 18px;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+      }
+      .info-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 15px;
+      }
+      .info-card {
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 10px 14px;
+      }
+      .info-item {
+        font-size: 11px;
+        display: flex;
+        justify-content: space-between;
+        border-bottom: 1px dashed #f1f5f9;
+        padding: 4px 0;
+      }
+      .info-item:last-child {
+        border-bottom: none;
+      }
+      .info-label {
+        font-weight: bold;
+        color: #475569;
+      }
+      .info-value {
+        color: #0f172a;
+        font-weight: 600;
+      }
+      .status-badge {
+        display: inline-block;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: bold;
+        border: 1px solid #ddd;
+      }
+      .Approved, .Done { background-color: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+      .Pending { background-color: #fffbeb; color: #b45309; border-color: #fde68a; }
+      .Rejected { background-color: #fef2f2; color: #b91c1c; border-color: #fca5a5; }
+      .Issued { background-color: #e0e7ff; color: #4338ca; border-color: #c7d2fe; }
+
+      .table-data {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 15px;
+      }
+      .table-data th, .table-data td {
+        border: 1px solid #e2e8f0;
+        padding: 8px 10px;
+        text-align: left;
+        font-size: 11px;
+      }
+      .table-data th {
+        background-color: #f1f5f9;
+        font-weight: bold;
+        color: #1e3a8a;
+      }
+      
+      .accounts-summary-wrapper {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 20px;
+        margin-top: 10px;
+      }
+      .accounts-summary-box {
+        width: 320px;
+        border-collapse: collapse;
+      }
+      .accounts-summary-box td {
+        padding: 6px 10px;
+        font-size: 11.5px;
+        border: 1px solid #e2e8f0;
+      }
+      .accounts-summary-box .total-row {
+        font-weight: bold;
+        background-color: #f8fafc;
+        color: #1e3a8a;
+      }
+      .amount-words-box {
+        background-color: #f8fafc;
+        border-left: 4px solid #1e3a8a;
+        padding: 8px 12px;
+        font-size: 11.5px;
+        font-weight: 600;
+        color: #0f172a;
+        flex: 1;
+      }
+      .signatures-container {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 50px;
+        padding-top: 15px;
+      }
+      .signature-block {
+        text-align: center;
+        width: 180px;
+        border-top: 1px dashed #94a3b8;
+        padding-top: 6px;
+        font-size: 11px;
+        font-weight: 600;
+        color: #475569;
+      }
+      .print-footer {
+        margin-top: 30px;
+        text-align: center;
+        font-size: 10px;
+        color: #94a3b8;
+        border-top: 1px solid #f1f5f9;
+        padding-top: 10px;
+      }
+      @media print {
+        body {
+          padding: 0;
+          background: none;
+        }
+        .profile-container {
+          box-shadow: none;
+          margin: 0;
+        }
+      }
+    `);
+    printWindow.document.write('</style></head><body>');
+    printWindow.document.write(`
+      <div class="profile-container">
+        <div class="watermark">HAMAF AIR</div>
+        
+        <div class="header-container">
+          <div class="logo-details">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 36px; height: 36px; color: #1e3a8a; margin-right: 12px; transform: rotate(45deg); flex-shrink: 0;"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+            <div>
+              <h1 class="agency-title">Hamaf Air International</h1>
+              <p class="agency-subtitle">Hajj, Umrah & Travel Agency (হজ্জ, উমরাহ ও ট্রাভেল এজেন্ট)</p>
+              <p class="agency-contact">Dhaka, Bangladesh • Phone: +88${passenger.phone || '0XXXXXXXXXX'}</p>
+            </div>
+          </div>
+          <div class="doc-title-box">
+            <div class="doc-badge">Passenger Profile Ledger</div>
+            <div style="font-size: 9px; color: #64748b; margin-top: 4px;">তারিখ: ${new Date().toLocaleDateString('bn-BD')}</div>
+          </div>
+        </div>
+
+        <div class="section-title">১. যাত্রীর সাধারণ তথ্য (Passenger Personal & Travel Info)</div>
+        <div class="info-grid">
+          <div class="info-card">
+            <div class="info-item"><span class="info-label">যাত্রীর নাম (Name):</span> <span class="info-value" style="color:#1e3a8a; font-size: 12px;">${passenger.name}</span></div>
+            <div class="info-item"><span class="info-label">পাসপোর্ট নম্বর (Passport):</span> <span class="info-value" style="font-family: monospace; font-weight: bold;">${passenger.passportNumber}</span></div>
+            <div class="info-item"><span class="info-label">মোবাইল নম্বর (Phone):</span> <span class="info-value" style="font-family: monospace;">+88${passenger.phone || ''}</span></div>
+            <div class="info-item"><span class="info-label">ইমেইল (Email):</span> <span class="info-value">${passenger.email || 'N/A'}</span></div>
+          </div>
+          <div class="info-card">
+            <div class="info-item"><span class="info-label">গন্তব্য দেশ (Destination):</span> <span class="info-value">${passenger.destination}</span></div>
+            <div class="info-item"><span class="info-label">ভ্রমণের তারিখ (Travel Date):</span> <span class="info-value" style="font-family: monospace;">${passenger.travelDate}</span></div>
+            <div class="info-item"><span class="info-label">ভিসা অবস্থা (Visa):</span> <span class="info-value"><span class="status-badge ${passenger.visaStatus}">${passenger.visaStatus}</span></span></div>
+            <div class="info-item"><span class="info-label">টিকিট অবস্থা (Ticket):</span> <span class="info-value"><span class="status-badge ${passenger.ticketStatus}">${passenger.ticketStatus}</span></span></div>
+          </div>
+        </div>
+
+        <div class="section-title">২. প্রসেস ট্র্যাকিং মাইলস্টোন (Visa & Journey Progress Steps)</div>
+        <table class="table-data">
+          <thead>
+            <tr>
+              <th style="width: 25%;">ধাপ (Step)</th>
+              <th style="width: 15%;">অবস্থা (Status)</th>
+              <th style="width: 20%;">তারিখ (Date)</th>
+              <th style="width: 20%;">মেয়াদ শেষ (Expiry Date)</th>
+              <th style="width: 20%;">মন্তব্য / বিবরণ (Remarks)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${steps.map((st) => `
+              <tr>
+                <td style="font-weight: 600; color: #1e3a8a;">${st.label}</td>
+                <td>
+                  <span class="status-badge ${st.status === 'Approved' || st.status === 'Done' ? 'Done' : st.status === 'Pending' ? 'Pending' : 'Rejected'}">
+                    ${st.status}
+                  </span>
+                </td>
+                <td style="font-family: monospace;">${st.date || 'N/A'}</td>
+                <td style="font-family: monospace; color: ${st.expiryDate ? '#dc2626' : '#475569'};">${st.expiryDate || 'N/A'}</td>
+                <td>${st.remarks || '-'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+
+        <div class="section-title">৩. ধাপে ধাপে জমাকৃত টাকার রশিদ তালিকা (Transaction Receipts Ledger)</div>
+        ${payments.length === 0 ? `
+          <div style="padding: 15px; border: 1px solid #e2e8f0; border-radius: 6px; text-align: center; color: #64748b; font-size: 11px; background-color: #f8fafc; margin-bottom: 15px;">
+            কোনো জমাকৃত রশিদ পাওয়া যায়নি (No transaction receipt entries found)
+          </div>
+        ` : `
+          <table class="table-data">
+            <thead>
+              <tr>
+                <th style="width: 20%;">রশিদ নম্বর</th>
+                <th style="width: 20%;">তারিখ</th>
+                <th style="width: 20%;">পরিশোধ মাধ্যম</th>
+                <th style="width: 25%; text-align: right;">পরিমাণ (Amount)</th>
+                <th style="width: 15%;">মন্তব্য (Remarks)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${payments.map((p: any) => `
+                <tr>
+                  <td style="font-family: monospace; font-weight: bold; color: #1e3a8a;">${p.receiptNo}</td>
+                  <td>${p.date}</td>
+                  <td style="font-weight: 600;">${p.paymentMethod}</td>
+                  <td style="text-align: right; font-family: monospace; font-weight: bold;">৳ ${p.amount.toLocaleString('bn-BD')} BDT</td>
+                  <td style="font-size: 10px; color: #64748b;">${p.remarks || '-'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `}
+
+        <div class="section-title">৪. আর্থিক হিসাবপত্র ও বকেয়া সারসংক্ষেপ (Financial Accounts Ledger)</div>
+        <div class="accounts-summary-wrapper">
+          <div class="amount-words-box">
+            <div><strong>সর্বমোট জমা কথায় (In Words):</strong></div>
+            <div style="color: #1e3a8a; margin-top: 6px; font-size: 12px; font-weight: bold;">${totalPaid > 0 ? bnTotalPaidWords : 'শূন্য টাকা মাত্র'}</div>
+            ${passenger.remarks ? `
+              <div style="margin-top: 12px; font-size: 10px; border-top: 1px solid #e2e8f0; padding-top: 6px; color: #475569; font-style: italic;">
+                <strong>বিশেষ অফিসিয়াল নোট:</strong> ${passenger.remarks}
+              </div>
+            ` : ''}
+          </div>
+          <div>
+            <table class="accounts-summary-box">
+              <tr>
+                <td>মোট চুক্তি মূল্য (Total Contract Value):</td>
+                <td style="text-align: right; font-family: monospace; font-weight: bold;">৳ ${passenger.totalAmount.toLocaleString('bn-BD')}</td>
+              </tr>
+              <tr>
+                <td>সর্বমোট জমা (Total Paid / Deposited):</td>
+                <td style="text-align: right; font-family: monospace; font-weight: bold; color: #16a34a;">৳ ${totalPaid.toLocaleString('bn-BD')}</td>
+              </tr>
+              <tr class="total-row">
+                <td>অবশিষ্ট নিট বকেয়া (Outstanding Net Due):</td>
+                <td style="text-align: right; font-family: monospace; font-weight: bold; color: #dc2626; font-size: 12px;">৳ ${totalDue.toLocaleString('bn-BD')}</td>
+              </tr>
+              <tr>
+                <td>পেমেন্ট অবস্থা (Payment Status):</td>
+                <td style="text-align: right; font-weight: bold;"><span style="color: ${passenger.paymentStatus === 'Paid' ? '#16a34a' : passenger.paymentStatus === 'Partial' ? '#d97706' : '#dc2626'}">${passenger.paymentStatus}</span></td>
+              </tr>
+            </table>
+          </div>
+        </div>
+
+        <div class="signatures-container">
+          <div class="signature-block">যাত্রীর স্বাক্ষর<br/><span style="font-size: 9px; color: #94a3b8; font-weight: normal;">(Passenger Signature)</span></div>
+          <div class="signature-block">হিসাবরক্ষক স্বাক্ষর<br/><span style="font-size: 9px; color: #94a3b8; font-weight: normal;">(Accountant Signature)</span></div>
+          <div class="signature-block">অনুমোদিত স্বাক্ষরকারী ও সিল<br/><span style="font-size: 9px; color: #94a3b8; font-weight: normal;">(Authorized Officer Seal)</span></div>
+        </div>
+
+        <div class="print-footer">
+          হ্যামাফ এয়ার ইন্টারন্যাশনাল এর সাথে থাকার জন্য ধন্যবাদ। সকল তথ্য নির্ভুল ও নিরাপদভাবে সংরক্ষণ করা হয়েছে।
         </div>
       </div>
     `);
@@ -995,12 +1691,24 @@ _যাত্রীর সুন্দর ও নিরাপদ সফর ক�
 
             {/* Installment Payment History */}
             <div className="space-y-3 pt-2">
-              <div className="flex items-center justify-between text-xs font-bold text-gray-500 uppercase tracking-wider">
+              <div className="flex items-center justify-between text-xs font-bold text-gray-500 uppercase tracking-wider flex-wrap gap-2">
                 <span className="flex items-center gap-1.5 text-slate-700">
                   <List className="h-3.5 w-3.5 text-slate-400" />
                   ধাপে ধাপে জমা রশিদ সমূহ (Payment History)
                 </span>
-                <span className="bg-slate-100 px-2 py-0.5 rounded text-gray-600">{(passenger.payments || []).length} টি এন্ট্রি</span>
+                <div className="flex items-center gap-2">
+                  {(passenger.payments || []).length > 0 && (
+                    <button
+                      onClick={handlePrintAllReceipts}
+                      className="px-2 py-1 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 hover:text-indigo-800 rounded border border-indigo-100 text-[10px] font-bold flex items-center gap-1 transition-all shrink-0 cursor-pointer shadow-xs"
+                      title="সবগুলো জমার রশিদের বিবরণী প্রিন্ট করুন (Download All Receipts)"
+                    >
+                      <Printer className="h-3 w-3" />
+                      <span>Download All Receipts</span>
+                    </button>
+                  )}
+                  <span className="bg-slate-100 px-2 py-0.5 rounded text-gray-600">{(passenger.payments || []).length} টি এন্ট্রি</span>
+                </div>
               </div>
 
               {(passenger.payments || []).length === 0 ? (
@@ -1029,10 +1737,11 @@ _যাত্রীর সুন্দর ও নিরাপদ সফর ক�
                       <div className="flex items-center gap-1.5 shrink-0 ml-2">
                         <button
                           onClick={() => handlePrintReceipt(pay)}
-                          className="p-1.5 hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-lg transition-all cursor-pointer"
-                          title="রশিদ প্রিন্ট করুন (Print Receipt)"
+                          className="px-2.5 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-800 rounded-lg text-[10px] font-bold flex items-center gap-1.5 transition-all border border-blue-100 shrink-0 cursor-pointer shadow-xs"
+                          title="রশিদ ডাউনলোড/প্রিন্ট করুন (Download PDF Receipt)"
                         >
-                          <Printer className="h-3.5 w-3.5" />
+                          <Printer className="h-3 w-3" />
+                          <span>Download PDF Receipt</span>
                         </button>
                         <button
                           onClick={() => handleDeletePayment(pay.id)}
@@ -1226,14 +1935,24 @@ _যাত্রীর সুন্দর ও নিরাপদ সফর ক�
             )}
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              id="print-all-a4-profile-btn"
+              onClick={handlePrintA4Profile}
+              className="px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-xl text-sm font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+              title="যাত্রীর সকল তথ্য এক ক্লিকে A4 কাগজে প্রিন্ট করুন"
+            >
+              <Printer className="h-4 w-4 text-white" />
+              <span>সকল তথ্য প্রিন্ট করুন (Print A4 Profile)</span>
+            </button>
             <button
               id="print-passenger-slip-btn"
               onClick={handlePrint}
               className="px-4 py-2 border border-gray-200 hover:bg-gray-100 text-gray-700 rounded-xl text-sm font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="ভ্রমণ স্লিপ প্রিন্ট করুন"
             >
               <Printer className="h-4 w-4 text-gray-500" />
-              <span>রসিদ প্রিন্ট করুন (Print Slip)</span>
+              <span>স্লিপ প্রিন্ট করুন (Print Slip)</span>
             </button>
             <button
               id="close-details-btn"
