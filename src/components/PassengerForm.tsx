@@ -213,6 +213,16 @@ export default function PassengerForm({ passenger, onSubmit, onCancel }: Passeng
       amountPaid,
       amountDue,
       remarks: remarks || undefined,
+      payments: (passenger?.payments && passenger.payments.length > 0) 
+        ? passenger.payments 
+        : (amountPaid > 0 ? [{
+            id: 'pay_' + Math.random().toString(36).substr(2, 9),
+            amount: amountPaid,
+            date: new Date().toISOString().split('T')[0],
+            receiptNo: 'HA-INIT-' + Math.floor(1000 + Math.random() * 9000),
+            paymentMethod: 'Cash (নগদ)',
+            remarks: 'প্রারম্ভিক জমা (Initial Deposit)'
+          }] : []),
       
       // Pass the step fields
       passportSubmitDate: passportSubmitDate || undefined,
@@ -984,12 +994,20 @@ export default function PassengerForm({ passenger, onSubmit, onCancel }: Passeng
                   id="input-amount-paid"
                   type="number"
                   min="0"
+                  disabled={!!(passenger?.payments && passenger.payments.length > 0)}
                   value={amountPaid || ''}
                   onChange={(e) => setAmountPaid(Number(e.target.value))}
                   placeholder="জমা বা পরিশোধিত টাকা"
-                  className="w-full pl-8 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono"
+                  className={`w-full pl-8 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono ${
+                    passenger?.payments && passenger.payments.length > 0 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''
+                  }`}
                 />
               </div>
+              {passenger?.payments && passenger.payments.length > 0 && (
+                <p className="text-[10px] text-amber-600 mt-1 font-medium">
+                  ⚠️ ধাপে ধাপে জমার রশিদ তালিকা থাকায় পরিশোধিত টাকা পরিবর্তন করতে প্রোফাইল ভিউ থেকে নতুন রশিদ এন্ট্রি করুন।
+                </p>
+              )}
             </div>
 
             {/* Amount Due (Read Only) */}

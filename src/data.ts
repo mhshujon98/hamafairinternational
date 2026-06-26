@@ -52,6 +52,24 @@ export const INITIAL_PASSENGERS: Passenger[] = [
     airTicketStatus: 'Done',
     airTicketDate: '2026-06-25',
     airTicketRemarks: 'টিকিট কনফার্ম ও ইস্যু করা হয়েছে',
+    payments: [
+      {
+        id: 'pay_1_1',
+        amount: 50000,
+        date: '2026-06-20',
+        receiptNo: 'HA-4920',
+        paymentMethod: 'Cash (নগদ)',
+        remarks: 'পাসপোর্ট জমাকালীন এডভান্স জমা'
+      },
+      {
+        id: 'pay_1_2',
+        amount: 35000,
+        date: '2026-06-25',
+        receiptNo: 'HA-4982',
+        paymentMethod: 'Bank Transfer (ব্যাংক)',
+        remarks: 'ভিসা ও টিকিট ইস্যু ফাইনাল পেমেন্ট'
+      }
+    ],
     createdAt: '2026-06-20T10:30:00.000Z',
     updatedAt: '2026-06-22T14:15:00.000Z'
   },
@@ -81,6 +99,16 @@ export const INITIAL_PASSENGERS: Passenger[] = [
     fingerprintStatus: 'Pending',
     policeClearanceStatus: 'Pending',
     okToBoardStatus: 'Pending',
+    payments: [
+      {
+        id: 'pay_2_1',
+        amount: 50000,
+        date: '2026-06-21',
+        receiptNo: 'HA-4931',
+        paymentMethod: 'bKash (বিকাশ)',
+        remarks: 'মেডিকেল বুকিং ও প্রসেসিং খরচ বাবদ'
+      }
+    ],
     createdAt: '2026-06-21T08:24:00.000Z',
     updatedAt: '2026-06-21T08:24:00.000Z'
   },
@@ -113,6 +141,24 @@ export const INITIAL_PASSENGERS: Passenger[] = [
     fingerprintDate: '2026-06-21',
     policeClearanceStatus: 'Not Required',
     okToBoardStatus: 'Pending',
+    payments: [
+      {
+        id: 'pay_3_1',
+        amount: 30000,
+        date: '2026-06-18',
+        receiptNo: 'HA-4902',
+        paymentMethod: 'Cash (নগদ)',
+        remarks: 'প্রাথমিক প্রসেসিং ফাইল ফি'
+      },
+      {
+        id: 'pay_3_2',
+        amount: 35000,
+        date: '2026-06-23',
+        receiptNo: 'HA-4965',
+        paymentMethod: 'Nagad (নগদ অ্যাপ)',
+        remarks: 'ভিসা স্ট্যাম্পিং ও টিকিট বুকিং বাবদ জমা'
+      }
+    ],
     createdAt: '2026-06-18T11:40:00.000Z',
     updatedAt: '2026-06-23T16:50:00.000Z'
   },
@@ -138,6 +184,16 @@ export const INITIAL_PASSENGERS: Passenger[] = [
     fingerprintStatus: 'Done',
     policeClearanceStatus: 'Done',
     okToBoardStatus: 'Done',
+    payments: [
+      {
+        id: 'pay_4_1',
+        amount: 15000,
+        date: '2026-06-19',
+        receiptNo: 'HA-4911',
+        paymentMethod: 'Cash (নগদ)',
+        remarks: 'প্রথম কিস্তি জমা'
+      }
+    ],
     createdAt: '2026-06-19T09:15:00.000Z',
     updatedAt: '2026-06-24T12:00:00.000Z'
   },
@@ -159,6 +215,16 @@ export const INITIAL_PASSENGERS: Passenger[] = [
     medicalStatus: 'Unfit',
     medicalDate: '2026-06-17',
     medicalRemarks: 'মেডিকেল রিপোর্টে আনফিট এসেছে',
+    payments: [
+      {
+        id: 'pay_5_1',
+        amount: 35000,
+        date: '2026-06-15',
+        receiptNo: 'HA-4890',
+        paymentMethod: 'Cash (নগদ)',
+        remarks: 'সম্পূর্ণ চুক্তি পেমেন্ট'
+      }
+    ],
     createdAt: '2026-06-15T14:22:00.000Z',
     updatedAt: '2026-06-24T10:10:00.000Z'
   }

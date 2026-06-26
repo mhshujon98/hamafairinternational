@@ -84,6 +84,13 @@ export default function App() {
     }
   };
 
+  // Live update passenger details (installments) from modal
+  const handleUpdatePassenger = (updatedPassenger: Passenger) => {
+    const updated = passengers.map((p) => p.id === updatedPassenger.id ? updatedPassenger : p);
+    savePassengersToStorage(updated);
+    setSelectedPassenger(updatedPassenger);
+  };
+
   // Delete passenger handler
   const handleDeletePassenger = (id: string) => {
     const updated = passengers.filter((p) => p.id !== id);
@@ -493,6 +500,7 @@ export default function App() {
         <PassengerDetails
           passenger={selectedPassenger}
           onClose={() => setSelectedPassenger(null)}
+          onUpdatePassenger={handleUpdatePassenger}
         />
       )}
 

@@ -2,6 +2,15 @@ export type VisaStatus = 'Pending' | 'Approved' | 'Rejected';
 export type TicketStatus = 'Not Booked' | 'Booked' | 'Issued';
 export type PaymentStatus = 'Paid' | 'Due' | 'Partial';
 
+export interface PaymentRecord {
+  id: string;
+  amount: number;       // জমা পরিমাণ
+  date: string;         // জমার তারিখ
+  receiptNo: string;    // জমা রশিদ নম্বর
+  paymentMethod: string; // পরিশোধের মাধ্যম (যেমন: নগদ, ব্যাংক, বিকাশ)
+  remarks?: string;     // মন্তব্য
+}
+
 export interface Passenger {
   id: string;
   name: string; // যাত্রীর নাম
@@ -65,6 +74,7 @@ export interface Passenger {
   airTicketStatus?: 'Pending' | 'Done' | 'N/A'; // Air Ticket অবস্থা
   airTicketDate?: string; // Air Ticket শুরুর তারিখ
   airTicketRemarks?: string; // Air Ticket মন্তব্য
+  payments?: PaymentRecord[]; // ধাপে ধাপে পেমেন্ট রশিদ সমূহ
 
   createdAt: string;
   updatedAt: string;
