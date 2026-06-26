@@ -5,7 +5,6 @@ import { createServer as createViteServer } from "vite";
 import { db } from "./src/db/index.ts";
 import { passengers, users } from "./src/db/schema.ts";
 import { eq, and, sql } from "drizzle-orm";
-import { adminAuth } from "./src/lib/firebase-admin.ts";
 
 // Hash function for custom database-backed logins
 function hashPassword(password: string): string {
@@ -428,37 +427,7 @@ const authenticateToken = async (req: any, res: any, next: any) => {
     return next();
   }
 
-  // 2. Otherwise fall back to Firebase token
-  try {
-    const decodedToken = await adminAuth.verifyIdToken(token);
-    const email = decodedToken.email;
-    if (!email) {
-      return res.status(401).json({ error: "অনুমতি নেই। টোকেনটিতে কোনো ইমেইল পাওয়া যায়নি।" });
-    }
-
-    const cleanEmail = email.trim().toLowerCase();
-
-    // Sync user in postgres
-    const usersList = await db.select().from(users).where(eq(users.uid, decodedToken.uid));
-    if (usersList.length === 0) {
-      await db.insert(users).values({
-        uid: decodedToken.uid,
-        email: cleanEmail,
-        name: decodedToken.name || null,
-        phone: decodedToken.phone_number || null,
-      }).onConflictDoNothing();
-    }
-
-    req.user = {
-      email: cleanEmail,
-      uid: decodedToken.uid,
-      name: decodedToken.name || ""
-    };
-    next();
-  } catch (error) {
-    console.error("Error verifying Firebase ID token:", error);
-    return res.status(403).json({ error: "লগইন সেশন শেষ হয়েছে বা ভুল টোকেন। আবার লগইন করুন।" });
-  }
+  return res.status(403).json({ error: "লগইন সেশন শেষ হয়েছে বা ভুল টোকেন। আবার লগইন করুন।" });
 };
 
 async function startServer() {

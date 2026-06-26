@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { PlaneTakeoff, ShieldCheck, ArrowRight, Loader2, Mail, Lock, User, Phone } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { auth } from '../lib/firebase';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 
 interface LoginProps {
   onLoginSuccess: (token: string, email: string) => void;
@@ -25,28 +23,6 @@ export default function Login({ onLoginSuccess }: LoginProps) {
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const translateFirebaseError = (code: string) => {
-    switch (code) {
-      case 'auth/invalid-email':
-        return 'ভুল ইমেইল ঠিকানা। অনুগ্রহ করে সঠিক ইমেইল লিখুন।';
-      case 'auth/user-disabled':
-        return 'এই অ্যাকাউন্টটি নিষ্ক্রিয় করা হয়েছে।';
-      case 'auth/user-not-found':
-      case 'auth/invalid-credential':
-        return 'ইমেইল অথবা পাসওয়ার্ড ভুল হয়েছে। অনুগ্রহ করে আবার যাচাই করুন।';
-      case 'auth/wrong-password':
-        return 'ভুল পাসওয়ার্ড। আবার চেষ্টা করুন।';
-      case 'auth/email-already-in-use':
-        return 'এই ইমেইল ঠিকানাটি ইতিমধ্যে নিবন্ধিত রয়েছে। অন্য ইমেইল ব্যবহার করুন।';
-      case 'auth/weak-password':
-        return 'পাসওয়ার্ড অত্যন্ত দুর্বল। অন্তত ৬ অক্ষরের পাসওয়ার্ড ব্যবহার করুন।';
-      case 'auth/operation-not-allowed':
-        return 'ইমেইল ও পাসওয়ার্ড লগইন নিষ্ক্রিয় করা আছে। অনুগ্রহ করে আপনার ফায়ারবেস কনসোলে (Firebase Console > Authentication > Sign-in method) গিয়ে Email/Password সচল (Enable) করুন।';
-      default:
-        return 'সার্ভারে কানেক্ট করতে ব্যর্থ হয়েছে। অনুগ্রহ করে পুনরায় চেষ্টা করুন।';
-    }
-  };
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!loginEmail.trim() || !loginPassword.trim()) {
@@ -59,12 +35,11 @@ export default function Login({ onLoginSuccess }: LoginProps) {
     setSuccessMsg(null);
 
     try {
-      // 1. Try direct database authentication first
       const response = await fetch('/api/auth/db-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: loginEmail.trim(),
+          email: loginEmail.trim().toLowerCase(),
           password: loginPassword.trim()
         })
       });
@@ -75,30 +50,11 @@ export default function Login({ onLoginSuccess }: LoginProps) {
         return;
       }
 
-      // If database login failed, and it's not a 404, we show the database error message directly
-      if (response.status !== 404) {
-        const dbErrData = await response.json().catch(() => null);
-        if (dbErrData && dbErrData.error) {
-          setError(dbErrData.error);
-        } else {
-          setError('লগইন করতে ব্যর্থ হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।');
-        }
-        return;
-      }
-
-      // 2. If database login fails with a 404, fallback to Firebase authentication
-      try {
-        const userCredential = await signInWithEmailAndPassword(
-          auth, 
-          loginEmail.trim(), 
-          loginPassword.trim()
-        );
-        
-        const idToken = await userCredential.user.getIdToken();
-        onLoginSuccess(idToken, userCredential.user.email || '');
-      } catch (err: any) {
-        console.error("Firebase Login failed:", err);
-        setError(translateFirebaseError(err.code));
+      const dbErrData = await response.json().catch(() => null);
+      if (dbErrData && dbErrData.error) {
+        setError(dbErrData.error);
+      } else {
+        setError('লগইন করতে ব্যর্থ হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।');
       }
     } catch (err: any) {
       console.error("Login overall failed:", err);
@@ -125,13 +81,12 @@ export default function Login({ onLoginSuccess }: LoginProps) {
     setSuccessMsg(null);
 
     try {
-      // 1. Try direct database registration first
       const response = await fetch('/api/auth/db-register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: registerName.trim(),
-          email: registerEmail.trim(),
+          email: registerEmail.trim().toLowerCase(),
           phone: registerPhone.trim(),
           password: registerPassword.trim()
         })
@@ -146,57 +101,25 @@ export default function Login({ onLoginSuccess }: LoginProps) {
         return;
       }
 
-      // If database registration failed, and it's not a 404, show the database error directly
-      if (response.status !== 404) {
-        const dbErrData = await response.json().catch(() => null);
-        if (dbErrData && dbErrData.error) {
-          setError(dbErrData.error);
-        } else {
-          setError('নিবন্ধন করতে ব্যর্থ হয়েছে। পুনরায় চেষ্টা করুন।');
-        }
-        return;
-      }
-
-      // 2. If database registration fails with a 404, fallback to Firebase registration
-      try {
-        const userCredential = await createUserWithEmailAndPassword(
-          auth, 
-          registerEmail.trim(), 
-          registerPassword.trim()
-        );
-        
-        await updateProfile(userCredential.user, {
-          displayName: registerName.trim()
-        });
-
-        setSuccessMsg('অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে! প্রবেশ করা হচ্ছে...');
-        const idToken = await userCredential.user.getIdToken();
-        
-        setTimeout(() => {
-          onLoginSuccess(idToken, userCredential.user.email || '');
-        }, 1000);
-      } catch (err: any) {
-        console.error("Firebase Registration failed:", err);
-        setError(translateFirebaseError(err.code));
+      const dbErrData = await response.json().catch(() => null);
+      if (dbErrData && dbErrData.error) {
+        setError(dbErrData.error);
+      } else {
+        setError('নিবন্ধন করতে ব্যর্থ হয়েছে। পুনরায় চেষ্টা করুন।');
       }
     } catch (err: any) {
       console.error("Registration overall failed:", err);
-      setError('নিবন্ধন করতে ব্যর্থ হয়েছে। পুনরায় চেষ্টা করুন।');
+      setError('সার্ভারে কানেক্ট করতে ব্যর্থ হয়েছে। অনুগ্রহ করে পুনরায় চেষ্টা করুন।');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between font-sans relative overflow-hidden">
+    <div className="min-h-screen bg-[#070b13] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(30,58,138,0.25),rgba(255,255,255,0))] flex flex-col justify-between">
       
-      {/* Background radial soft light blobs */}
-      <div className="absolute -top-40 -left-40 w-96 h-96 bg-blue-600 rounded-full blur-3xl opacity-20 pointer-events-none"></div>
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-indigo-600 rounded-full blur-[140px] opacity-10 pointer-events-none"></div>
-      <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-emerald-600 rounded-full blur-3xl opacity-15 pointer-events-none"></div>
-
-      {/* Header Bar */}
-      <header className="p-6 relative z-10">
+      {/* Upper Navigation Header */}
+      <header className="border-b border-slate-900 bg-slate-950/40 backdrop-blur-md p-4 relative z-10">
         <div className="max-w-7xl mx-auto flex items-center gap-3">
           <div className="p-2.5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl text-white shadow-lg shadow-blue-500/20">
             <PlaneTakeoff className="h-5 w-5" />
@@ -281,46 +204,10 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                   exit={{ opacity: 0, height: 0 }}
                   className="mb-4 overflow-hidden"
                 >
-                  {error.includes("ফায়ারবেস কনসোলে") ? (
-                    <div className="bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs p-4 rounded-xl space-y-3">
-                      <div className="flex items-center gap-2 font-bold text-amber-400">
-                        <span className="flex h-2 w-2 relative">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
-                        </span>
-                        <span>ফায়ারবেস কনফিগারেশন করা প্রয়োজন (Action Required)</span>
-                      </div>
-                      <p className="leading-relaxed text-[11px] text-slate-300">
-                        আপনার ফায়ারবেস প্রজেক্টে ইমেইল/পাসওয়ার্ড দিয়ে লগইন করার সুবিধাটি এখনও সচল করা হয়নি। এটি সচল করতে নিচের সহজ ৩টি ধাপ অনুসরণ করুন:
-                      </p>
-                      <ol className="list-decimal pl-4 space-y-2 text-[11px] text-slate-400">
-                        <li>
-                          <a 
-                            href={`https://console.firebase.google.com/project/${auth.app.options.projectId || 'animated-berm-xwfkz'}/authentication/providers`} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-blue-400 hover:text-blue-300 font-bold underline inline-flex items-center gap-1"
-                          >
-                            Firebase Console-এ এই লিংকে যান ↗
-                          </a>
-                        </li>
-                        <li>
-                          সেখান থেকে <strong className="text-slate-200 font-bold">"Email/Password"</strong> অপশনে ক্লিক করুন।
-                        </li>
-                        <li>
-                          <strong className="text-slate-200 font-bold">"Enable"</strong> সিলেক্ট করে সেটিংসটি সংরক্ষণ (Save) করুন।
-                        </li>
-                      </ol>
-                      <p className="text-[10px] text-slate-500 italic mt-1 pt-2 border-t border-slate-800/80">
-                        সেটিংস সেভ করার পর এই পেজটি রিফ্রেশ দিয়ে আবার চেষ্টা করুন।
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-semibold p-3.5 rounded-xl flex items-start gap-2">
-                      <span className="mt-0.5 shrink-0 block w-1.5 h-1.5 rounded-full bg-rose-400"></span>
-                      <span className="leading-relaxed">{error}</span>
-                    </div>
-                  )}
+                  <div className="bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-semibold p-3.5 rounded-xl flex items-start gap-2">
+                    <span className="mt-0.5 shrink-0 block w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+                    <span className="leading-relaxed">{error}</span>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -357,18 +244,20 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                       id="login-email-field"
                       type="email"
                       required
-                      placeholder="যেমন: admin@example.com"
+                      placeholder="যেমন: rina@gmail.com"
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 bg-slate-950 text-slate-100 border border-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl text-sm focus:outline-none transition-all placeholder-slate-700 font-medium"
+                      className="w-full pl-10 pr-4 py-3 bg-slate-950 text-slate-100 border border-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl text-sm focus:outline-none transition-all placeholder-slate-700 font-medium font-sans"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label htmlFor="login-password-field" className="text-xs font-bold text-slate-300 block">
-                    পাসওয়ার্ড (Password)
-                  </label>
+                  <div className="flex justify-between items-center">
+                    <label htmlFor="login-password-field" className="text-xs font-bold text-slate-300">
+                      পাসওয়ার্ড (Password)
+                    </label>
+                  </div>
                   <div className="relative">
                     <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
                       <Lock className="h-4 w-4" />
@@ -388,7 +277,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full mt-2 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-blue-800 disabled:to-indigo-800 text-white rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-900/30 transform active:scale-98 cursor-pointer border border-blue-500/20"
+                  className="w-full mt-2 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-blue-800 disabled:to-indigo-800 text-white rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-950/50 transform active:scale-98 cursor-pointer border border-blue-500/20"
                 >
                   {loading ? (
                     <>
@@ -449,6 +338,25 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                 </div>
 
                 <div className="space-y-1.5">
+                  <label htmlFor="reg-phone-field" className="text-xs font-bold text-slate-300 block">
+                    মোবাইল নম্বর (Phone)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
+                      <Phone className="h-4 w-4" />
+                    </span>
+                    <input
+                      id="reg-phone-field"
+                      type="text"
+                      placeholder="যেমন: 01712345678"
+                      value={registerPhone}
+                      onChange={(e) => setRegisterPhone(e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 bg-slate-950 text-slate-100 border border-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl text-sm focus:outline-none transition-all placeholder-slate-700 font-medium"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
                   <label htmlFor="reg-password-field" className="text-xs font-bold text-slate-300 block">
                     পাসওয়ার্ড (Password - অন্তত ৬ অক্ষর)
                   </label>
@@ -494,10 +402,10 @@ export default function Login({ onLoginSuccess }: LoginProps) {
           <div className="mt-6 text-center space-y-1">
             <p className="text-[10px] text-slate-600 font-bold uppercase tracking-widest flex items-center justify-center gap-1.5">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              Secure Google Cloud SQL Database Active
+              Secure PostgreSQL Database Active
             </p>
             <p className="text-[9px] text-slate-700 max-w-xs mx-auto">
-              আপনার প্রবেশকৃত তথ্য ক্লাউড এসকিউএল ডাটাবেজে সম্পূর্ণ পৃথক সেশন দ্বারা সুরক্ষিত। এক ব্যবহারকারীর তথ্য অন্য কেউ দেখতে পারেন না।
+              আপনার প্রবেশকৃত তথ্য ক্লাউড ডাটাবেজে সম্পূর্ণ পৃথক সেশন দ্বারা সুরক্ষিত। এক ব্যবহারকারীর তথ্য অন্য কেউ দেখতে পারেন না।
             </p>
           </div>
 
