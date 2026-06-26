@@ -4,8 +4,168 @@ import crypto from "crypto";
 import { createServer as createViteServer } from "vite";
 import { db } from "./src/db/index.ts";
 import { passengers, users } from "./src/db/schema.ts";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { adminAuth } from "./src/lib/firebase-admin.ts";
+
+// Hash function for custom database-backed logins
+function hashPassword(password: string): string {
+  return crypto.createHash("sha256").update(password + "HAMAF_SALT_123987!").digest("hex");
+}
+
+// Generate secure custom token
+function generateToken(user: { uid: string; email: string; name: string }) {
+  const payload = JSON.stringify({
+    uid: user.uid,
+    email: user.email,
+    name: user.name,
+    exp: Date.now() + 1000 * 60 * 60 * 24 * 7 // 7 days
+  });
+  const signature = crypto.createHmac("sha256", "HAMAF_SERVER_SECRET_9876").update(payload).digest("hex");
+  return `custom_token_${Buffer.from(payload).toString("base64")}.${signature}`;
+}
+
+// Verify custom token
+function verifyToken(tokenStr: string) {
+  if (!tokenStr || !tokenStr.startsWith("custom_token_")) return null;
+  try {
+    const parts = tokenStr.substring("custom_token_".length).split(".");
+    if (parts.length !== 2) return null;
+    const [payloadBase64, signature] = parts;
+    const payloadStr = Buffer.from(payloadBase64, "base64").toString("utf8");
+    
+    const expectedSignature = crypto.createHmac("sha256", "HAMAF_SERVER_SECRET_9876").update(payloadStr).digest("hex");
+    if (expectedSignature !== signature) return null;
+
+    const payload = JSON.parse(payloadStr);
+    if (payload.exp < Date.now()) return null;
+
+    return payload;
+  } catch (e) {
+    return null;
+  }
+}
+
+// Auto-initialize tables in PostgreSQL / Supabase
+async function initializeDatabase() {
+  console.log("Initializing database tables if not exist...");
+  
+  // 1. Create users table if not exists
+  try {
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        uid TEXT NOT NULL UNIQUE,
+        email TEXT NOT NULL UNIQUE,
+        name TEXT,
+        phone TEXT,
+        password TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+    `);
+    console.log("Users table verified / created.");
+  } catch (e) {
+    console.warn("Could not create users table. It might already exist:", e);
+  }
+
+  // Ensure the password column exists in users table (just in case)
+  try {
+    await db.execute(sql`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS password TEXT;
+    `);
+    console.log("Ensured password column exists in users table.");
+  } catch (e) {
+    console.warn("Could not add password column to users table:", e);
+  }
+
+  // 2. Create passengers table if not exists
+  try {
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS passengers (
+        id TEXT PRIMARY KEY,
+        owner_email TEXT NOT NULL,
+        agent_id TEXT,
+        name TEXT NOT NULL,
+        passport_number TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        email TEXT,
+        destination TEXT NOT NULL,
+        flight_number TEXT,
+        travel_date TEXT NOT NULL,
+        visa_status TEXT NOT NULL,
+        ticket_status TEXT NOT NULL,
+        payment_status TEXT NOT NULL,
+        total_amount INTEGER NOT NULL DEFAULT 0,
+        amount_paid INTEGER NOT NULL DEFAULT 0,
+        amount_due INTEGER NOT NULL DEFAULT 0,
+        remarks TEXT,
+        passport_submit_date TEXT,
+        passport_expiry_date TEXT,
+        passport_submit_remarks TEXT,
+        medical_status TEXT,
+        medical_date TEXT,
+        medical_expiry_date TEXT,
+        medical_remarks TEXT,
+        mofa_status TEXT,
+        mofa_number TEXT,
+        mofa_date TEXT,
+        mofa_expiry_date TEXT,
+        visa_stamping_status TEXT,
+        visa_stamping_date TEXT,
+        visa_expiry_date TEXT,
+        fingerprint_status TEXT,
+        fingerprint_date TEXT,
+        taqamul_status TEXT,
+        taqamul_profession TEXT,
+        taqamul_date TEXT,
+        taqamul_expiry_date TEXT,
+        police_clearance_status TEXT,
+        police_clearance_date TEXT,
+        police_clearance_expiry_date TEXT,
+        ok_to_board_status TEXT,
+        ok_to_board_date TEXT,
+        bmet_training_status TEXT,
+        bmet_training_date TEXT,
+        bmet_training_expiry_date TEXT,
+        bmet_training_remarks TEXT,
+        manpower_status TEXT,
+        manpower_date TEXT,
+        manpower_remarks TEXT,
+        air_ticket_status TEXT,
+        air_ticket_date TEXT,
+        air_ticket_remarks TEXT,
+        payments JSONB,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+    `);
+    console.log("Passengers table verified / created.");
+  } catch (e) {
+    console.warn("Could not create passengers table:", e);
+  }
+
+  // 3. Create agents table if not exists
+  try {
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS agents (
+        id TEXT PRIMARY KEY,
+        owner_email TEXT NOT NULL,
+        name TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        email TEXT,
+        agency_name TEXT,
+        commission_rate INTEGER NOT NULL DEFAULT 0,
+        remarks TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+    `);
+    console.log("Agents table verified / created.");
+  } catch (e) {
+    console.warn("Could not create agents table:", e);
+  }
+
+  console.log("Database initialization completed!");
+}
 
 const PORT = 3000;
 
@@ -243,6 +403,22 @@ const authenticateToken = async (req: any, res: any, next: any) => {
     return res.status(401).json({ error: "অনুমতি নেই। অনুগ্রহ করে লগইন করুন।" });
   }
 
+  // 1. Check if it's a custom DB token
+  if (token.startsWith("custom_token_")) {
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return res.status(403).json({ error: "লগইন সেশন শেষ হয়েছে বা ভুল টোকেন। আবার লগইন করুন।" });
+    }
+    
+    req.user = {
+      email: decoded.email.trim().toLowerCase(),
+      uid: decoded.uid,
+      name: decoded.name || ""
+    };
+    return next();
+  }
+
+  // 2. Otherwise fall back to Firebase token
   try {
     const decodedToken = await adminAuth.verifyIdToken(token);
     const email = decodedToken.email;
@@ -276,11 +452,106 @@ const authenticateToken = async (req: any, res: any, next: any) => {
 };
 
 async function startServer() {
+  // Initialize database tables & columns
+  await initializeDatabase();
+
   const app = express();
 
   app.use(express.json());
 
   // --- AUTH ENDPOINTS ---
+
+  app.post("/api/auth/db-register", async (req, res) => {
+    const { name, email, phone, password } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: "অনুগ্রহ করে সব প্রয়োজনীয় ঘরগুলো পূরণ করুন।" });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    try {
+      // Check if user already exists
+      const existingUsers = await db.select().from(users).where(eq(users.email, cleanEmail));
+      if (existingUsers.length > 0) {
+        return res.status(400).json({ error: "এই ইমেইল ঠিকানাটি ইতিমধ্যে নিবন্ধিত রয়েছে। অন্য ইমেইল ব্যবহার করুন।" });
+      }
+
+      // Create new user
+      const customUid = "user_" + crypto.randomBytes(12).toString("hex");
+      const hashedPassword = hashPassword(password);
+
+      const newUser = {
+        uid: customUid,
+        email: cleanEmail,
+        name: name.trim(),
+        phone: phone ? phone.trim() : null,
+        password: hashedPassword,
+        createdAt: new Date()
+      };
+
+      await db.insert(users).values(newUser);
+
+      // Generate custom token
+      const token = generateToken({
+        uid: customUid,
+        email: cleanEmail,
+        name: newUser.name
+      });
+
+      res.status(201).json({
+        success: true,
+        token,
+        email: cleanEmail,
+        name: newUser.name
+      });
+    } catch (e: any) {
+      console.error("DB Register error:", e);
+      res.status(500).json({ error: "নিবন্ধন করতে ব্যর্থ হয়েছে। পুনরায় চেষ্টা করুন।" });
+    }
+  });
+
+  app.post("/api/auth/db-login", async (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: "অনুগ্রহ করে ইমেইল এবং পাসওয়ার্ড দুটিই পূরণ করুন।" });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    try {
+      const existingUsers = await db.select().from(users).where(eq(users.email, cleanEmail));
+      if (existingUsers.length === 0) {
+        return res.status(400).json({ error: "ইমেইল অথবা পাসওয়ার্ড ভুল হয়েছে। অনুগ্রহ করে আবার যাচাই করুন।" });
+      }
+
+      const user = existingUsers[0];
+      const hashedPassword = hashPassword(password);
+
+      // Check password
+      if (!user.password || user.password !== hashedPassword) {
+        return res.status(400).json({ error: "ইমেইল অথবা পাসওয়ার্ড ভুল হয়েছে। অনুগ্রহ করে আবার যাচাই করুন।" });
+      }
+
+      // Generate custom token
+      const token = generateToken({
+        uid: user.uid,
+        email: cleanEmail,
+        name: user.name || ""
+      });
+
+      res.json({
+        success: true,
+        token,
+        email: cleanEmail,
+        name: user.name || ""
+      });
+    } catch (e: any) {
+      console.error("DB Login error:", e);
+      res.status(500).json({ error: "লগইন করতে ব্যর্থ হয়েছে। পুনরায় চেষ্টা করুন।" });
+    }
+  });
 
   app.get("/api/auth/me", authenticateToken, (req: any, res) => {
     res.json({

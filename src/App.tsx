@@ -38,30 +38,74 @@ export default function App() {
   const [editingPassenger, setEditingPassenger] = useState<Passenger | null>(null);
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
 
-  // Load and verify auth session on mount using Firebase onAuthStateChanged
+  // Load and verify auth session on mount with custom token persistence and Firebase fallback
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        try {
-          const idToken = await user.getIdToken();
-          setToken(idToken);
-          setUserEmail(user.email);
-          setIsAuthenticated(true);
-        } catch (e) {
-          console.error("Error getting idToken", e);
-          setIsAuthenticated(false);
-        }
-      } else {
-        setToken(null);
-        setUserEmail(null);
-        setIsAuthenticated(false);
-        setPassengers([]);
-        setSelectedPassenger(null);
-        setEditingPassenger(null);
-      }
-    });
+    let active = true;
+    let unsubscribeFirebase: (() => void) | null = null;
 
-    return () => unsubscribe();
+    const checkAuth = async () => {
+      // 1. Check localStorage for custom token first
+      const savedToken = localStorage.getItem('hamaf_token');
+      const savedEmail = localStorage.getItem('hamaf_email');
+      
+      if (savedToken && savedEmail) {
+        try {
+          const res = await fetch('/api/auth/me', {
+            headers: { 'Authorization': `Bearer ${savedToken}` }
+          });
+          if (res.ok && active) {
+            setToken(savedToken);
+            setUserEmail(savedEmail);
+            setIsAuthenticated(true);
+            return; // Skip Firebase auth check if custom token is valid
+          } else {
+            // Invalid token
+            localStorage.removeItem('hamaf_token');
+            localStorage.removeItem('hamaf_email');
+          }
+        } catch (e) {
+          console.error("Failed to verify custom token:", e);
+        }
+      }
+
+      if (!active) return;
+
+      // 2. Fallback to Firebase onAuthStateChanged
+      unsubscribeFirebase = onAuthStateChanged(auth, async (user) => {
+        if (!active) return;
+        if (user) {
+          try {
+            const idToken = await user.getIdToken();
+            setToken(idToken);
+            setUserEmail(user.email);
+            setIsAuthenticated(true);
+          } catch (e) {
+            console.error("Error getting idToken", e);
+            setIsAuthenticated(false);
+          }
+        } else {
+          // If we haven't authenticated via custom token, then set authenticated to false
+          const currentToken = localStorage.getItem('hamaf_token');
+          if (!currentToken) {
+            setToken(null);
+            setUserEmail(null);
+            setIsAuthenticated(false);
+            setPassengers([]);
+            setSelectedPassenger(null);
+            setEditingPassenger(null);
+          }
+        }
+      });
+    };
+
+    checkAuth();
+
+    return () => {
+      active = false;
+      if (unsubscribeFirebase) {
+        unsubscribeFirebase();
+      }
+    };
   }, []);
 
   // Fetch passengers whenever authentication state changes to true
@@ -92,6 +136,8 @@ export default function App() {
   };
 
   const handleLoginSuccess = (newToken: string, newEmail: string) => {
+    localStorage.setItem('hamaf_token', newToken);
+    localStorage.setItem('hamaf_email', newEmail);
     setToken(newToken);
     setUserEmail(newEmail);
     setIsAuthenticated(true);
@@ -100,6 +146,14 @@ export default function App() {
 
   const handleLogout = async () => {
     try {
+      localStorage.removeItem('hamaf_token');
+      localStorage.removeItem('hamaf_email');
+      setToken(null);
+      setUserEmail(null);
+      setIsAuthenticated(false);
+      setPassengers([]);
+      setSelectedPassenger(null);
+      setEditingPassenger(null);
       await signOut(auth);
     } catch (e) {
       console.error("Logout failed", e);

@@ -5,10 +5,25 @@ import * as schema from "./schema.ts";
 const { Pool } = pg;
 
 export const createPool = () => {
-  const connectionString = process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL;
+  const supabaseUrl = process.env.SUPABASE_DATABASE_URL;
+  const genericDbUrl = process.env.DATABASE_URL;
+  
+  // Choose the connection string
+  let connectionString = supabaseUrl || genericDbUrl;
+
+  // Let's inspect if the connection string is a placeholder or invalid
+  if (connectionString) {
+    if (connectionString.includes("[YOUR-PASSWORD]") || connectionString.includes("[YOUR-PROJECT-REF]")) {
+      console.warn("Database connection string contains placeholder values. Ignoring it.");
+      connectionString = undefined;
+    }
+  }
 
   if (connectionString) {
-    console.log("Connecting to Supabase/External PostgreSQL via connection string with SSL...");
+    // Mask the password for safe logging
+    const maskedUrl = connectionString.replace(/:([^:@]+)@/, ":******@");
+    console.log(`Connecting to database via connection string: ${maskedUrl}`);
+    
     return new Pool({
       connectionString,
       ssl: {
@@ -22,6 +37,8 @@ export const createPool = () => {
   const user = process.env.SQL_USER || process.env.SQL_ADMIN_USER;
   const password = process.env.SQL_PASSWORD || process.env.SQL_ADMIN_PASSWORD;
   const database = process.env.SQL_DB_NAME;
+
+  console.log(`Connecting to Cloud SQL database: host=${host}, user=${user}, database=${database}`);
 
   if (!host || !user || !database) {
     console.warn("Missing SQL environment variables in createPool (no connection string and no Cloud SQL configuration)!");

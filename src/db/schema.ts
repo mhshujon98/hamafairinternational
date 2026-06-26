@@ -8,6 +8,7 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   name: text("name"),
   phone: text("phone"),
+  password: text("password"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -15,6 +16,7 @@ export const users = pgTable("users", {
 export const passengers = pgTable("passengers", {
   id: text("id").primaryKey(), // Using text id (e.g. 'pass_xxxx')
   ownerEmail: text("owner_email").notNull(), // Linked to logged-in user email
+  agentId: text("agent_id"), // Linked to agents.id
   name: text("name").notNull(),
   passportNumber: text("passport_number").notNull(),
   phone: text("phone").notNull(),
@@ -83,7 +85,33 @@ export const passengers = pgTable("passengers", {
   updatedAt: text("updated_at").notNull(),
 });
 
+// Agents Table
+export const agents = pgTable("agents", {
+  id: text("id").primaryKey(), // Using text id (e.g. 'agent_xxxx')
+  ownerEmail: text("owner_email").notNull(), // Linked to logged-in user email
+  name: text("name").notNull(), // এজেন্টের নাম
+  phone: text("phone").notNull(), // এজেন্টের মোবাইল নম্বর
+  email: text("email"), // এজেন্টের ইমেইল
+  agencyName: text("agency_name"), // এজেন্টের এজেন্সির নাম
+  commissionRate: integer("commission_rate").notNull().default(0), // প্রতিটি যাত্রী প্রতি কমিশন (টাকা)
+  remarks: text("remarks"), // মন্তব্য
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+
 // Relationships
 export const usersRelations = relations(users, ({ many }) => ({
   passengers: many(passengers),
+  agents: many(agents),
+}));
+
+export const agentsRelations = relations(agents, ({ many }) => ({
+  passengers: many(passengers),
+}));
+
+export const passengersRelations = relations(passengers, ({ one }) => ({
+  agent: one(agents, {
+    fields: [passengers.agentId],
+    references: [agents.id],
+  }),
 }));

@@ -59,17 +59,44 @@ export default function Login({ onLoginSuccess }: LoginProps) {
     setSuccessMsg(null);
 
     try {
-      const userCredential = await signInWithEmailAndPassword(
-        auth, 
-        loginEmail.trim(), 
-        loginPassword.trim()
-      );
-      
-      const idToken = await userCredential.user.getIdToken();
-      onLoginSuccess(idToken, userCredential.user.email || '');
+      // 1. Try direct database authentication first
+      const response = await fetch('/api/auth/db-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: loginEmail.trim(),
+          password: loginPassword.trim()
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        onLoginSuccess(data.token, data.email);
+        return;
+      }
+
+      // 2. If database login fails, fallback to Firebase authentication
+      try {
+        const userCredential = await signInWithEmailAndPassword(
+          auth, 
+          loginEmail.trim(), 
+          loginPassword.trim()
+        );
+        
+        const idToken = await userCredential.user.getIdToken();
+        onLoginSuccess(idToken, userCredential.user.email || '');
+      } catch (err: any) {
+        console.error("Firebase Login failed:", err);
+        const dbErrData = await response.json().catch(() => null);
+        if (dbErrData && dbErrData.error) {
+          setError(dbErrData.error);
+        } else {
+          setError(translateFirebaseError(err.code));
+        }
+      }
     } catch (err: any) {
-      console.error("Login failed:", err);
-      setError(translateFirebaseError(err.code));
+      console.error("Login overall failed:", err);
+      setError('সার্ভারে কানেক্ট করতে ব্যর্থ হয়েছে। অনুগ্রহ করে পুনরায় চেষ্টা করুন।');
     } finally {
       setLoading(false);
     }
@@ -92,29 +119,57 @@ export default function Login({ onLoginSuccess }: LoginProps) {
     setSuccessMsg(null);
 
     try {
-      // 1. Create Firebase user
-      const userCredential = await createUserWithEmailAndPassword(
-        auth, 
-        registerEmail.trim(), 
-        registerPassword.trim()
-      );
-      
-      // 2. Set profile display name
-      await updateProfile(userCredential.user, {
-        displayName: registerName.trim()
+      // 1. Try direct database registration first
+      const response = await fetch('/api/auth/db-register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: registerName.trim(),
+          email: registerEmail.trim(),
+          phone: registerPhone.trim(),
+          password: registerPassword.trim()
+        })
       });
 
-      setSuccessMsg('অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে! প্রবেশ করা হচ্ছে...');
-      
-      // 3. Get Auth ID Token
-      const idToken = await userCredential.user.getIdToken();
-      
-      setTimeout(() => {
-        onLoginSuccess(idToken, userCredential.user.email || '');
-      }, 1000);
+      if (response.ok) {
+        const data = await response.json();
+        setSuccessMsg('অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে! প্রবেশ করা হচ্ছে...');
+        setTimeout(() => {
+          onLoginSuccess(data.token, data.email);
+        }, 1000);
+        return;
+      }
+
+      // 2. If database registration fails, fallback to Firebase registration
+      try {
+        const userCredential = await createUserWithEmailAndPassword(
+          auth, 
+          registerEmail.trim(), 
+          registerPassword.trim()
+        );
+        
+        await updateProfile(userCredential.user, {
+          displayName: registerName.trim()
+        });
+
+        setSuccessMsg('অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে! প্রবেশ করা হচ্ছে...');
+        const idToken = await userCredential.user.getIdToken();
+        
+        setTimeout(() => {
+          onLoginSuccess(idToken, userCredential.user.email || '');
+        }, 1000);
+      } catch (err: any) {
+        console.error("Firebase Registration failed:", err);
+        const dbErrData = await response.json().catch(() => null);
+        if (dbErrData && dbErrData.error) {
+          setError(dbErrData.error);
+        } else {
+          setError(translateFirebaseError(err.code));
+        }
+      }
     } catch (err: any) {
-      console.error("Registration failed:", err);
-      setError(translateFirebaseError(err.code));
+      console.error("Registration overall failed:", err);
+      setError('নিবন্ধন করতে ব্যর্থ হয়েছে। পুনরায় চেষ্টা করুন।');
     } finally {
       setLoading(false);
     }
