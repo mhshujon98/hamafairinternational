@@ -75,14 +75,18 @@ export default function Login({ onLoginSuccess }: LoginProps) {
         return;
       }
 
-      // If database login failed, get the error message first
-      const dbErrData = await response.json().catch(() => null);
-      if (dbErrData && dbErrData.error) {
-        setError(dbErrData.error);
+      // If database login failed, and it's not a 404, we show the database error message directly
+      if (response.status !== 404) {
+        const dbErrData = await response.json().catch(() => null);
+        if (dbErrData && dbErrData.error) {
+          setError(dbErrData.error);
+        } else {
+          setError('লগইন করতে ব্যর্থ হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।');
+        }
         return;
       }
 
-      // 2. If database login fails and didn't return a specific message, fallback to Firebase authentication
+      // 2. If database login fails with a 404, fallback to Firebase authentication
       try {
         const userCredential = await signInWithEmailAndPassword(
           auth, 
@@ -142,14 +146,18 @@ export default function Login({ onLoginSuccess }: LoginProps) {
         return;
       }
 
-      // If database registration failed, get the error message first
-      const dbErrData = await response.json().catch(() => null);
-      if (dbErrData && dbErrData.error) {
-        setError(dbErrData.error);
+      // If database registration failed, and it's not a 404, show the database error directly
+      if (response.status !== 404) {
+        const dbErrData = await response.json().catch(() => null);
+        if (dbErrData && dbErrData.error) {
+          setError(dbErrData.error);
+        } else {
+          setError('নিবন্ধন করতে ব্যর্থ হয়েছে। পুনরায় চেষ্টা করুন।');
+        }
         return;
       }
 
-      // 2. If database registration fails and didn't return a specific message, fallback to Firebase registration
+      // 2. If database registration fails with a 404, fallback to Firebase registration
       try {
         const userCredential = await createUserWithEmailAndPassword(
           auth, 
