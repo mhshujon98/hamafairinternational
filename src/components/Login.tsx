@@ -75,7 +75,14 @@ export default function Login({ onLoginSuccess }: LoginProps) {
         return;
       }
 
-      // 2. If database login fails, fallback to Firebase authentication
+      // If database login failed, get the error message first
+      const dbErrData = await response.json().catch(() => null);
+      if (dbErrData && dbErrData.error) {
+        setError(dbErrData.error);
+        return;
+      }
+
+      // 2. If database login fails and didn't return a specific message, fallback to Firebase authentication
       try {
         const userCredential = await signInWithEmailAndPassword(
           auth, 
@@ -87,12 +94,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
         onLoginSuccess(idToken, userCredential.user.email || '');
       } catch (err: any) {
         console.error("Firebase Login failed:", err);
-        const dbErrData = await response.json().catch(() => null);
-        if (dbErrData && dbErrData.error) {
-          setError(dbErrData.error);
-        } else {
-          setError(translateFirebaseError(err.code));
-        }
+        setError(translateFirebaseError(err.code));
       }
     } catch (err: any) {
       console.error("Login overall failed:", err);
@@ -140,7 +142,14 @@ export default function Login({ onLoginSuccess }: LoginProps) {
         return;
       }
 
-      // 2. If database registration fails, fallback to Firebase registration
+      // If database registration failed, get the error message first
+      const dbErrData = await response.json().catch(() => null);
+      if (dbErrData && dbErrData.error) {
+        setError(dbErrData.error);
+        return;
+      }
+
+      // 2. If database registration fails and didn't return a specific message, fallback to Firebase registration
       try {
         const userCredential = await createUserWithEmailAndPassword(
           auth, 
@@ -160,12 +169,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
         }, 1000);
       } catch (err: any) {
         console.error("Firebase Registration failed:", err);
-        const dbErrData = await response.json().catch(() => null);
-        if (dbErrData && dbErrData.error) {
-          setError(dbErrData.error);
-        } else {
-          setError(translateFirebaseError(err.code));
-        }
+        setError(translateFirebaseError(err.code));
       }
     } catch (err: any) {
       console.error("Registration overall failed:", err);
