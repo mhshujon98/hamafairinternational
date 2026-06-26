@@ -33,7 +33,8 @@ interface Passenger {
   amountPaid: number;
   amountDue: number;
   remarks?: string;
-  ownerPhone: string; // The user who owns this record
+  ownerPhone?: string; // The user who owns this record
+  ownerEmail?: string; // The email of the user who owns this record
   createdAt: string;
   updatedAt: string;
   payments?: PaymentRecord[];
@@ -76,22 +77,25 @@ interface Passenger {
   airTicketRemarks?: string;
 }
 
-interface Session {
-  token: string;
-  phone: string;
-  expiresAt: number;
+interface User {
+  id: string;
+  email: string;
+  passwordHash: string;
+  name: string;
+  phone?: string;
+  createdAt: string;
 }
 
-interface OTP {
-  phone: string;
-  code: string;
+interface Session {
+  token: string;
+  email: string;
   expiresAt: number;
 }
 
 interface DatabaseSchema {
+  users: User[];
   passengers: Passenger[];
   sessions: Session[];
-  otps: OTP[];
 }
 
 // Initial Passengers seeded with owner phones matching their phone field for demo purposes
@@ -330,22 +334,20 @@ function readDB(): DatabaseSchema {
   try {
     if (fs.existsSync(DB_FILE)) {
       const data = fs.readFileSync(DB_FILE, "utf-8");
-      return JSON.parse(data);
+      const parsed = JSON.parse(data);
+      if (!parsed.users) parsed.users = [];
+      if (!parsed.passengers) parsed.passengers = [];
+      if (!parsed.sessions) parsed.sessions = [];
+      return parsed;
     }
   } catch (e) {
     console.error("Error reading database file, using defaults", e);
   }
   
-  // Seed with default data
-  const seededPassengers = INITIAL_PASSENGERS.map((p) => ({
-    ...p,
-    ownerPhone: p.phone // Map initial passengers to their own phone number as owners
-  }));
-  
   const defaultDB: DatabaseSchema = {
-    passengers: seededPassengers,
-    sessions: [],
-    otps: []
+    users: [],
+    passengers: [],
+    sessions: []
   };
   
   writeDB(defaultDB);
@@ -361,6 +363,11 @@ function writeDB(data: DatabaseSchema) {
   }
 }
 
+// Helper to hash password using sha256
+function hashPassword(password: string): string {
+  return crypto.createHash("sha256").update(password).digest("hex");
+}
+
 // Start Server Wrapper
 async function startServer() {
   const app = express();
@@ -368,7 +375,7 @@ async function startServer() {
 
   app.use(express.json());
 
-  // Clean expired OTPs and Sessions periodically
+  // Clean expired Sessions periodically
   setInterval(() => {
     const db = readDB();
     const now = Date.now();
@@ -377,12 +384,6 @@ async function startServer() {
     const activeSessions = db.sessions.filter((s) => s.expiresAt > now);
     if (activeSessions.length !== db.sessions.length) {
       db.sessions = activeSessions;
-      changed = true;
-    }
-
-    const activeOTPs = db.otps.filter((o) => o.expiresAt > now);
-    if (activeOTPs.length !== db.otps.length) {
-      db.otps = activeOTPs;
       changed = true;
     }
 
@@ -407,66 +408,58 @@ async function startServer() {
       return res.status(403).json({ error: "লগইন সেশন শেষ হয়েছে। আবার লগইন করুন।" });
     }
 
-    req.user = { phone: session.phone };
+    req.user = { email: session.email };
     next();
   };
 
   // --- AUTH ENDPOINTS ---
 
-  // Request OTP
-  app.post("/api/auth/send-otp", (req, res) => {
-    const { phone } = req.body;
-    
-    if (!phone || typeof phone !== "string" || phone.trim().length < 8) {
-      return res.status(400).json({ error: "সঠিক মোবাইল নম্বর প্রদান করুন।" });
+  // User Registration
+  app.post("/api/auth/register", (req, res) => {
+    const { name, email, phone, password } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: "নাম, ইমেইল এবং পাসওয়ার্ড আবশ্যক।" });
     }
 
-    const cleanPhone = phone.trim();
-    
-    // Generate 6-digit OTP code
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes expiration
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail.includes("@")) {
+      return res.status(400).json({ error: "সঠিক ইমেইল ঠিকানা প্রদান করুন।" });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ error: "পাসওয়ার্ড অন্তত ৬ অক্ষরের হতে হবে।" });
+    }
 
     const db = readDB();
-    
-    // Remove existing OTP for this phone
-    db.otps = db.otps.filter((o) => o.phone !== cleanPhone);
-    db.otps.push({ phone: cleanPhone, code: otpCode, expiresAt });
+    const userExists = db.users.some((u) => u.email === cleanEmail);
+
+    if (userExists) {
+      return res.status(400).json({ error: "এই ইমেইল দিয়ে ইতিমধ্যে একটি অ্যাকাউন্ট তৈরি করা হয়েছে।" });
+    }
+
+    const passwordHash = hashPassword(password);
+    const newUser: User = {
+      id: "usr_" + crypto.randomBytes(8).toString("hex"),
+      name: name.trim(),
+      email: cleanEmail,
+      phone: phone ? phone.trim() : undefined,
+      passwordHash,
+      createdAt: new Date().toISOString()
+    };
+
+    db.users.push(newUser);
+
+    // Auto-seed some demo passengers for this new user so their database is not empty and they can see it working immediately!
+    const userDemos = INITIAL_PASSENGERS.map((p, idx) => ({
+      ...p,
+      id: "pass_init_" + idx + "_" + crypto.randomBytes(4).toString("hex"),
+      ownerEmail: cleanEmail,
+      ownerPhone: newUser.phone || ""
+    }));
+    db.passengers.unshift(...userDemos);
+
     writeDB(db);
-
-    console.log(`[SMS OTP SIMULATION] Code for ${cleanPhone} is: ${otpCode}`);
-
-    // Return the simulationCode so the UI can toast/alert it to the user.
-    // This allows real-world testing without needing active premium SMS gateways.
-    res.json({
-      success: true,
-      message: "মোবাইল নম্বরে একটি ৬-সংখ্যার ওটিপি কোড পাঠানো হয়েছে।",
-      simulationCode: otpCode
-    });
-  });
-
-  // Verify OTP & Sign In
-  app.post("/api/auth/verify-otp", (req, res) => {
-    const { phone, code } = req.body;
-
-    if (!phone || !code) {
-      return res.status(400).json({ error: "মোবাইল নম্বর এবং ওটিপি কোড উভয়ই আবশ্যক।" });
-    }
-
-    const cleanPhone = phone.trim();
-    const cleanCode = code.trim();
-
-    const db = readDB();
-    const otpIndex = db.otps.findIndex(
-      (o) => o.phone === cleanPhone && o.code === cleanCode && o.expiresAt > Date.now()
-    );
-
-    if (otpIndex === -1) {
-      return res.status(400).json({ error: "ভুল অথবা মেয়াদোত্তীর্ণ ওটিপি কোড। অনুগ্রহ করে আবার চেষ্টা করুন।" });
-    }
-
-    // Remove OTP after verification
-    db.otps.splice(otpIndex, 1);
 
     // Create session token
     const token = crypto.randomBytes(32).toString("hex");
@@ -474,43 +467,75 @@ async function startServer() {
 
     db.sessions.push({
       token,
-      phone: cleanPhone,
+      email: cleanEmail,
       expiresAt: sessionExpiresAt
     });
+    writeDB(db);
 
-    // Make sure we have some demo passengers for this phone if it's one of the initial ones
-    // and they don't have any record owned by them yet.
-    const userPassengers = db.passengers.filter(p => p.ownerPhone === cleanPhone);
-    if (userPassengers.length === 0) {
-      // If there are passengers whose contact phone matches this, assign ownership
-      let claimedCount = 0;
-      db.passengers = db.passengers.map(p => {
-        if (p.phone === cleanPhone && !p.ownerPhone) {
-          claimedCount++;
-          return { ...p, ownerPhone: cleanPhone };
-        }
-        return p;
-      });
-      if (claimedCount > 0) {
-        writeDB(db);
-      }
+    res.status(201).json({
+      success: true,
+      token,
+      email: cleanEmail,
+      name: newUser.name,
+      message: "অ্যাকাউন্ট সফলভাবে তৈরি করা হয়েছে।"
+    });
+  });
+
+  // User Login
+  app.post("/api/auth/login", (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: "ইমেইল এবং পাসওয়ার্ড আবশ্যক।" });
     }
 
+    const cleanEmail = email.trim().toLowerCase();
+    const db = readDB();
+    
+    const user = db.users.find((u) => u.email === cleanEmail);
+    if (!user) {
+      return res.status(401).json({ error: "ভুল ইমেইল বা পাসওয়ার্ড। অনুগ্রহ করে আবার চেষ্টা করুন।" });
+    }
+
+    const passwordHash = hashPassword(password);
+    if (user.passwordHash !== passwordHash) {
+      return res.status(401).json({ error: "ভুল ইমেইল বা পাসওয়ার্ড। অনুগ্রহ করে আবার চেষ্টা করুন।" });
+    }
+
+    // Create session token
+    const token = crypto.randomBytes(32).toString("hex");
+    const sessionExpiresAt = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+
+    db.sessions.push({
+      token,
+      email: cleanEmail,
+      expiresAt: sessionExpiresAt
+    });
     writeDB(db);
 
     res.json({
       success: true,
       token,
-      phone: cleanPhone,
+      email: cleanEmail,
+      name: user.name,
       message: "সফলভাবে লগইন হয়েছে।"
     });
   });
 
   // Get Current Authenticated User
   app.get("/api/auth/me", authenticateToken, (req: any, res) => {
+    const db = readDB();
+    const user = db.users.find((u) => u.email === req.user.email);
+    
+    if (!user) {
+      return res.status(404).json({ error: "ব্যবহারকারী খুঁজে পাওয়া যায়নি।" });
+    }
+
     res.json({
       success: true,
-      phone: req.user.phone
+      email: user.email,
+      name: user.name,
+      phone: user.phone
     });
   });
 
@@ -534,7 +559,7 @@ async function startServer() {
   // 1. Get User's Passengers
   app.get("/api/passengers", authenticateToken, (req: any, res) => {
     const db = readDB();
-    const myPassengers = db.passengers.filter((p) => p.ownerPhone === req.user.phone);
+    const myPassengers = db.passengers.filter((p) => p.ownerEmail === req.user.email);
     res.json(myPassengers);
   });
 
@@ -551,7 +576,7 @@ async function startServer() {
     const newPassenger: Passenger = {
       ...passengerData,
       id: "pass_" + crypto.randomBytes(8).toString("hex"),
-      ownerPhone: req.user.phone, // STRICT SECURITY: Auto-bind to logged-in user
+      ownerEmail: req.user.email, // STRICT SECURITY: Auto-bind to logged-in user email
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -577,7 +602,7 @@ async function startServer() {
     const passenger = db.passengers[passengerIndex];
 
     // STRICT SECURITY: Verify ownership before allowing update
-    if (passenger.ownerPhone !== req.user.phone) {
+    if (passenger.ownerEmail !== req.user.email) {
       return res.status(403).json({ error: "আপনার এই যাত্রীর তথ্য পরিবর্তন করার অনুমতি নেই।" });
     }
 
@@ -586,7 +611,7 @@ async function startServer() {
       ...passenger,
       ...updateData,
       id: passenger.id,
-      ownerPhone: passenger.ownerPhone, // Immutable
+      ownerEmail: passenger.ownerEmail, // Immutable
       createdAt: passenger.createdAt, // Immutable
       updatedAt: new Date().toISOString()
     };
@@ -611,7 +636,7 @@ async function startServer() {
     const passenger = db.passengers[passengerIndex];
 
     // STRICT SECURITY: Verify ownership before allowing delete
-    if (passenger.ownerPhone !== req.user.phone) {
+    if (passenger.ownerEmail !== req.user.email) {
       return res.status(403).json({ error: "আপনার এই যাত্রীর তথ্য ডিলিট করার অনুমতি নেই।" });
     }
 
@@ -626,14 +651,14 @@ async function startServer() {
     const db = readDB();
     
     // Remove current user's passengers
-    db.passengers = db.passengers.filter((p) => p.ownerPhone !== req.user.phone);
+    db.passengers = db.passengers.filter((p) => p.ownerEmail !== req.user.email);
     
     // Generate new demo passengers owned by this user
     const userDemos = INITIAL_PASSENGERS.map((p, idx) => ({
       ...p,
       id: "pass_demo_" + idx + "_" + crypto.randomBytes(4).toString("hex"),
-      ownerPhone: req.user.phone,
-      phone: idx === 0 ? req.user.phone : p.phone // Set first demo passenger's phone to user's phone
+      ownerEmail: req.user.email,
+      phone: p.phone
     }));
 
     db.passengers.unshift(...userDemos);
@@ -645,7 +670,10 @@ async function startServer() {
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: { 
+        middlewareMode: true,
+        hmr: false // Explicitly disable HMR to avoid WebSocket port conflicts
+      },
       appType: "spa",
     });
     app.use(vite.middlewares);

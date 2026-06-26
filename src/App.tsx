@@ -23,7 +23,7 @@ import {
 
 export default function App() {
   const [token, setToken] = useState<string | null>(null);
-  const [userPhone, setUserPhone] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null); // null means checking, true/false means verified
   
   const [passengers, setPassengers] = useState<Passenger[]>([]);
@@ -39,9 +39,9 @@ export default function App() {
   // Load and verify auth session on mount
   useEffect(() => {
     const savedToken = localStorage.getItem('hamaf_auth_token');
-    const savedPhone = localStorage.getItem('hamaf_auth_phone');
+    const savedEmail = localStorage.getItem('hamaf_auth_email');
     
-    if (savedToken && savedPhone) {
+    if (savedToken && savedEmail) {
       // Verify token with server
       fetch('/api/auth/me', {
         headers: { 'Authorization': `Bearer ${savedToken}` }
@@ -49,7 +49,7 @@ export default function App() {
       .then(res => {
         if (res.ok) {
           setToken(savedToken);
-          setUserPhone(savedPhone);
+          setUserEmail(savedEmail);
           setIsAuthenticated(true);
         } else {
           // Token is invalid/expired
@@ -92,9 +92,9 @@ export default function App() {
     }
   };
 
-  const handleLoginSuccess = (newToken: string, newPhone: string) => {
+  const handleLoginSuccess = (newToken: string, newEmail: string) => {
     setToken(newToken);
-    setUserPhone(newPhone);
+    setUserEmail(newEmail);
     setIsAuthenticated(true);
     setActiveTab('dashboard');
   };
@@ -113,9 +113,9 @@ export default function App() {
     }
     
     localStorage.removeItem('hamaf_auth_token');
-    localStorage.removeItem('hamaf_auth_phone');
+    localStorage.removeItem('hamaf_auth_email');
     setToken(null);
-    setUserPhone(null);
+    setUserEmail(null);
     setIsAuthenticated(false);
     setPassengers([]);
     setSelectedPassenger(null);
@@ -123,7 +123,7 @@ export default function App() {
   };
 
   // Add or edit passenger handler (Using safe server API)
-  const handleFormSubmit = async (formData: Omit<Passenger, 'id' | 'createdAt' | 'updatedAt' | 'ownerPhone'>) => {
+  const handleFormSubmit = async (formData: Omit<Passenger, 'id' | 'createdAt' | 'updatedAt' | 'ownerPhone' | 'ownerEmail'>) => {
     if (!token) return;
     
     try {
@@ -370,7 +370,7 @@ export default function App() {
                   নিরাপদ সেশন
                 </span>
                 <span className="text-xs font-mono font-bold text-slate-200">
-                  {userPhone}
+                  {userEmail}
                 </span>
               </div>
               <div className="p-1.5 bg-slate-850 rounded-xl flex items-center gap-1.5 border border-slate-800">

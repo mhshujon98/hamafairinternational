@@ -1,114 +1,107 @@
-import React, { useState, useEffect } from 'react';
-import { PlaneTakeoff, Phone, ShieldCheck, ArrowRight, Loader2, RefreshCw, MessageSquare } from 'lucide-react';
+import React, { useState } from 'react';
+import { PlaneTakeoff, ShieldCheck, ArrowRight, Loader2, Mail, Lock, User, Phone } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface LoginProps {
-  onLoginSuccess: (token: string, phone: string) => void;
+  onLoginSuccess: (token: string, email: string) => void;
 }
 
 export default function Login({ onLoginSuccess }: LoginProps) {
-  const [phone, setPhone] = useState('');
-  const [code, setCode] = useState('');
-  const [step, setStep] = useState<'phone' | 'otp'>('phone');
+  const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
   
+  // Registration States
+  const [registerName, setRegisterName] = useState('');
+  const [registerEmail, setRegisterEmail] = useState('');
+  const [registerPhone, setRegisterPhone] = useState('');
+  const [registerPassword, setRegisterPassword] = useState('');
+
+  // Login States
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const [simulatedOTP, setSimulatedOTP] = useState<string | null>(null);
-  const [countdown, setCountdown] = useState(0);
 
-  // Timer for OTP resend
-  useEffect(() => {
-    if (countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [countdown]);
-
-  // Request OTP
-  const handleSendOTP = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!phone.trim()) {
-      setError('অনুগ্রহ করে আপনার সচল মোবাইল নম্বরটি লিখুন।');
+    if (!loginEmail.trim() || !loginPassword.trim()) {
+      setError('অনুগ্রহ করে ইমেইল এবং পাসওয়ার্ড দুটিই পূরণ করুন।');
       return;
     }
 
     setLoading(true);
     setError(null);
     setSuccessMsg(null);
-    setSimulatedOTP(null);
 
     try {
-      const res = await fetch('/api/auth/send-otp', {
+      const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: phone.trim() }),
+        body: JSON.stringify({
+          email: loginEmail.trim(),
+          password: loginPassword.trim()
+        }),
       });
 
       const data = await res.json();
       
       if (!res.ok) {
-        throw new Error(data.error || 'ওটিপি পাঠাতে ব্যর্থ হয়েছে।');
+        throw new Error(data.error || 'লগইন করতে ব্যর্থ হয়েছে।');
       }
 
-      setSuccessMsg(data.message);
-      // Retrieve simulation OTP from server to display in the UI for premium simulation
-      if (data.simulationCode) {
-        setSimulatedOTP(data.simulationCode);
-      }
-      setStep('otp');
-      setCountdown(60); // 60 seconds countdown
+      localStorage.setItem('hamaf_auth_token', data.token);
+      localStorage.setItem('hamaf_auth_email', data.email);
+      onLoginSuccess(data.token, data.email);
     } catch (err: any) {
-      setError(err.message || 'একটি ত্রুটি ঘটেছে। অনুগ্রহ করে আবার চেষ্টা করুন।');
+      setError(err.message || 'সার্ভার কানেকশন ত্রুটি। অনুগ্রহ করে আবার চেষ্টা করুন।');
     } finally {
       setLoading(false);
     }
   };
 
-  // Verify OTP & Complete Login
-  const handleVerifyOTP = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!code.trim() || code.trim().length !== 6) {
-      setError('অনুগ্রহ করে সঠিক ৬-সংখ্যার ওটিপি কোডটি লিখুন।');
+    if (!registerName.trim() || !registerEmail.trim() || !registerPassword.trim()) {
+      setError('অনুগ্রহ করে সব প্রয়োজনীয় ঘরগুলো পূরণ করুন।');
       return;
     }
 
     setLoading(true);
     setError(null);
+    setSuccessMsg(null);
 
     try {
-      const res = await fetch('/api/auth/verify-otp', {
+      const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          phone: phone.trim(),
-          code: code.trim() 
+        body: JSON.stringify({
+          name: registerName.trim(),
+          email: registerEmail.trim(),
+          phone: registerPhone.trim(),
+          password: registerPassword.trim()
         }),
       });
 
       const data = await res.json();
-
+      
       if (!res.ok) {
-        throw new Error(data.error || 'ওটিপি ভেরিফিকেশন ব্যর্থ হয়েছে।');
+        throw new Error(data.error || 'অ্যাকাউন্ট তৈরি করতে ব্যর্থ হয়েছে।');
       }
 
-      // Success
+      setSuccessMsg(data.message);
+      
       localStorage.setItem('hamaf_auth_token', data.token);
-      localStorage.setItem('hamaf_auth_phone', data.phone);
-      onLoginSuccess(data.token, data.phone);
+      localStorage.setItem('hamaf_auth_email', data.email);
+      
+      setTimeout(() => {
+        onLoginSuccess(data.token, data.email);
+      }, 1000);
     } catch (err: any) {
-      setError(err.message || 'কোডটি সঠিক নয়। অনুগ্রহ করে পুনরায় সঠিক কোড দিয়ে চেষ্টা করুন।');
+      setError(err.message || 'সার্ভার কানেকশন ত্রুটি। অনুগ্রহ করে আবার চেষ্টা করুন।');
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleBackToPhone = () => {
-    setStep('phone');
-    setCode('');
-    setError(null);
-    setSuccessMsg(null);
-    setSimulatedOTP(null);
   };
 
   return (
@@ -140,50 +133,6 @@ export default function Login({ onLoginSuccess }: LoginProps) {
       <main className="flex-grow flex items-center justify-center p-4 relative z-10">
         <div className="w-full max-w-md">
           
-          {/* Simulated SMS Notification Banner */}
-          <AnimatePresence>
-            {simulatedOTP && (
-              <motion.div
-                initial={{ opacity: 0, y: -20, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                className="mb-6 bg-blue-500/10 border border-blue-500/30 rounded-2xl p-4 shadow-xl backdrop-blur-md"
-              >
-                <div className="flex gap-3">
-                  <div className="p-2 bg-blue-600/20 text-blue-400 rounded-xl h-fit">
-                    <MessageSquare className="h-5 w-5 animate-bounce" />
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest block">📩 SMS ওটিপি সিমুলেশন (Test Environment)</span>
-                    <p className="text-xs text-blue-100 leading-relaxed font-medium">
-                      আপনার মোবাইল নম্বরে পাঠানো ওটিপি কোডটি নিচে দেওয়া হলো। এটি কপি করে নিচের ইনপুটে সাবমিট করুন:
-                    </p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="px-3 py-1 bg-slate-900 border border-blue-500/40 text-blue-300 font-mono font-black text-sm tracking-widest rounded-lg">
-                        {simulatedOTP}
-                      </span>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(simulatedOTP);
-                          // Temporarily update button text
-                          const el = document.getElementById('copy-otp-btn');
-                          if (el) el.innerText = 'কপি করা হয়েছে!';
-                          setTimeout(() => {
-                            if (el) el.innerText = 'কপি করুন';
-                          }, 2000);
-                        }}
-                        id="copy-otp-btn"
-                        className="text-[10px] text-blue-400 hover:text-blue-300 font-bold hover:underline cursor-pointer"
-                      >
-                        কপি করুন
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
           {/* Core Auth Card */}
           <motion.div
             initial={{ opacity: 0, y: 15 }}
@@ -192,18 +141,52 @@ export default function Login({ onLoginSuccess }: LoginProps) {
             className="bg-slate-900/85 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-md"
           >
             {/* Card Icon & Header */}
-            <div className="text-center space-y-3 mb-8">
+            <div className="text-center space-y-3 mb-6">
               <div className="mx-auto p-4 bg-blue-600/15 text-blue-500 rounded-2xl w-fit border border-blue-500/20 shadow-inner">
                 <ShieldCheck className="h-8 w-8" />
               </div>
               <div className="space-y-1">
                 <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
-                  নিরাপদ ওটিপি লগইন
+                  হ্যামাফ এয়ার ট্রাভেল ডাটাবেজ
                 </h2>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  আপনার ডেটার সর্বোচ্চ নিরাপত্তা নিশ্চিতে ওটিপি ভিত্তিক সিস্টেম। আপনার ফোন নম্বর দিয়ে লগইন করুন এবং ওটিপি দিয়ে কোড ভেরিফাই করুন।
+                  আপনার একাউন্টে লগইন করুন অথবা সম্পূর্ণ নতুন একাউন্ট তৈরি করে ডাটাবেজে প্রবেশ করুন।
                 </p>
               </div>
+            </div>
+
+            {/* Custom Tabs Bar */}
+            <div className="flex bg-slate-950 p-1 rounded-xl mb-6 border border-slate-800">
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('login');
+                  setError(null);
+                  setSuccessMsg(null);
+                }}
+                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                  activeTab === 'login'
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                লগইন (Sign In)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('register');
+                  setError(null);
+                  setSuccessMsg(null);
+                }}
+                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                  activeTab === 'register'
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                নিবন্ধন (Sign Up)
+              </button>
             </div>
 
             {/* Error Message Box */}
@@ -213,7 +196,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="mb-6 overflow-hidden"
+                  className="mb-4 overflow-hidden"
                 >
                   <div className="bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-semibold p-3.5 rounded-xl flex items-start gap-2">
                     <span className="mt-0.5 shrink-0 block w-1.5 h-1.5 rounded-full bg-rose-400"></span>
@@ -223,46 +206,79 @@ export default function Login({ onLoginSuccess }: LoginProps) {
               )}
             </AnimatePresence>
 
-            {/* Step 1: PHONE NUMBER INPUT FORM */}
-            {step === 'phone' && (
-              <form onSubmit={handleSendOTP} className="space-y-5">
-                <div className="space-y-2">
-                  <label htmlFor="phone-number-field" className="text-xs font-bold text-slate-300 block">
-                    মোবাইল নম্বর লিখুন
+            {/* Success Message Box */}
+            <AnimatePresence mode="wait">
+              {successMsg && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="mb-4 overflow-hidden"
+                >
+                  <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-semibold p-3.5 rounded-xl flex items-start gap-2">
+                    <span className="mt-0.5 shrink-0 block w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                    <span className="leading-relaxed">{successMsg}</span>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Step 1: LOGIN FORM */}
+            {activeTab === 'login' && (
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label htmlFor="login-email-field" className="text-xs font-bold text-slate-300 block">
+                    ইমেইল ঠিকানা (Email)
                   </label>
                   <div className="relative">
                     <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
-                      <Phone className="h-4 w-4" />
+                      <Mail className="h-4 w-4" />
                     </span>
                     <input
-                      id="phone-number-field"
-                      type="tel"
+                      id="login-email-field"
+                      type="email"
                       required
-                      placeholder="যেমন: 01712345678"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value.replace(/[^0-9+]/g, ''))}
-                      className="w-full pl-10 pr-4 py-3 bg-slate-950 text-slate-100 border border-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl text-sm focus:outline-none transition-all placeholder-slate-600 font-medium"
+                      placeholder="যেমন: admin@example.com"
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 bg-slate-950 text-slate-100 border border-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl text-sm focus:outline-none transition-all placeholder-slate-700 font-medium"
                     />
                   </div>
-                  <span className="text-[10px] text-slate-500 block leading-normal">
-                    * ডেমো যাত্রী ডেটা দেখতে নিচের যেকোনো একটি নম্বর ব্যবহার করতে পারেন:<br />
-                    <strong className="text-blue-400/90 font-mono">01712345678, 01898765432, 01555443322</strong>
-                  </span>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label htmlFor="login-password-field" className="text-xs font-bold text-slate-300 block">
+                    পাসওয়ার্ড (Password)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
+                      <Lock className="h-4 w-4" />
+                    </span>
+                    <input
+                      id="login-password-field"
+                      type="password"
+                      required
+                      placeholder="পাসওয়ার্ড লিখুন"
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 bg-slate-950 text-slate-100 border border-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl text-sm focus:outline-none transition-all placeholder-slate-700 font-medium"
+                    />
+                  </div>
                 </div>
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-blue-800 disabled:to-indigo-800 text-white rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-900/30 transform active:scale-98 cursor-pointer border border-blue-500/20"
+                  className="w-full mt-2 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-blue-800 disabled:to-indigo-800 text-white rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-900/30 transform active:scale-98 cursor-pointer border border-blue-500/20"
                 >
                   {loading ? (
                     <>
                       <Loader2 className="h-4.5 w-4.5 animate-spin" />
-                      <span>কোড পাঠানো হচ্ছে...</span>
+                      <span>যাচাই করা হচ্ছে...</span>
                     </>
                   ) : (
                     <>
-                      <span>ওটিপি কোড পাঠান</span>
+                      <span>লগইন করুন</span>
                       <ArrowRight className="h-4 w-4" />
                     </>
                   )}
@@ -270,72 +286,105 @@ export default function Login({ onLoginSuccess }: LoginProps) {
               </form>
             )}
 
-            {/* Step 2: OTP VERIFICATION CODE FORM */}
-            {step === 'otp' && (
-              <form onSubmit={handleVerifyOTP} className="space-y-6">
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <label htmlFor="otp-code-field" className="text-xs font-bold text-slate-300 block">
-                      ওটিপি কোড লিখুন
-                    </label>
-                    <span className="text-[10px] text-emerald-400 font-semibold">কোড পাঠানো হয়েছে ({phone})</span>
-                  </div>
-                  <input
-                    id="otp-code-field"
-                    type="text"
-                    required
-                    maxLength={6}
-                    placeholder="৬-সংখ্যার কোড দিন"
-                    value={code}
-                    onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, ''))}
-                    className="w-full tracking-widest text-center py-3 bg-slate-950 text-slate-100 border border-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl text-lg font-bold font-mono focus:outline-none transition-all placeholder-slate-700"
-                  />
-                </div>
-
-                <div className="space-y-3">
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 disabled:from-emerald-800 disabled:to-teal-800 text-white rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-900/30 transform active:scale-98 cursor-pointer border border-emerald-500/20"
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="h-4.5 w-4.5 animate-spin" />
-                        <span>কোড যাচাই করা হচ্ছে...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>কোড সাবমিট করুন</span>
-                        <ShieldCheck className="h-4 w-4" />
-                      </>
-                    )}
-                  </button>
-
-                  <div className="flex justify-between items-center text-[11px] pt-2">
-                    <button
-                      type="button"
-                      onClick={handleBackToPhone}
-                      className="text-slate-400 hover:text-white hover:underline cursor-pointer"
-                    >
-                      নম্বর পরিবর্তন করুন
-                    </button>
-                    
-                    {countdown > 0 ? (
-                      <span className="text-slate-500">
-                        পুনরায় পাঠান ({countdown} সেকেন্ড)
-                      </span>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={handleSendOTP}
-                        className="text-blue-400 hover:text-blue-300 font-bold hover:underline flex items-center gap-1 cursor-pointer"
-                      >
-                        <RefreshCw className="h-3 w-3" />
-                        <span>পুনরায় কোড পাঠান</span>
-                      </button>
-                    )}
+            {/* Step 2: REGISTRATION FORM */}
+            {activeTab === 'register' && (
+              <form onSubmit={handleRegister} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label htmlFor="reg-name-field" className="text-xs font-bold text-slate-300 block">
+                    আপনার নাম (Full Name)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
+                      <User className="h-4 w-4" />
+                    </span>
+                    <input
+                      id="reg-name-field"
+                      type="text"
+                      required
+                      placeholder="যেমন: হাফেজ মোঃ মাহমুদুল হাসান"
+                      value={registerName}
+                      onChange={(e) => setRegisterName(e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 bg-slate-950 text-slate-100 border border-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl text-sm focus:outline-none transition-all placeholder-slate-700 font-medium"
+                    />
                   </div>
                 </div>
+
+                <div className="space-y-1.5">
+                  <label htmlFor="reg-email-field" className="text-xs font-bold text-slate-300 block">
+                    ইমেইল ঠিকানা (Email)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
+                      <Mail className="h-4 w-4" />
+                    </span>
+                    <input
+                      id="reg-email-field"
+                      type="email"
+                      required
+                      placeholder="যেমন: rina@gmail.com"
+                      value={registerEmail}
+                      onChange={(e) => setRegisterEmail(e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 bg-slate-950 text-slate-100 border border-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl text-sm focus:outline-none transition-all placeholder-slate-700 font-medium"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label htmlFor="reg-phone-field" className="text-xs font-bold text-slate-300 block">
+                    মোবাইল নম্বর (Phone - ঐচ্ছিক)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
+                      <Phone className="h-4 w-4" />
+                    </span>
+                    <input
+                      id="reg-phone-field"
+                      type="tel"
+                      placeholder="যেমন: 01712345678"
+                      value={registerPhone}
+                      onChange={(e) => setRegisterPhone(e.target.value.replace(/[^0-9+]/g, ''))}
+                      className="w-full pl-10 pr-4 py-3 bg-slate-950 text-slate-100 border border-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl text-sm focus:outline-none transition-all placeholder-slate-700 font-medium"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label htmlFor="reg-password-field" className="text-xs font-bold text-slate-300 block">
+                    পাসওয়ার্ড (Password - অন্তত ৬ অক্ষর)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
+                      <Lock className="h-4 w-4" />
+                    </span>
+                    <input
+                      id="reg-password-field"
+                      type="password"
+                      required
+                      placeholder="পাসওয়ার্ড লিখুন"
+                      value={registerPassword}
+                      onChange={(e) => setRegisterPassword(e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 bg-slate-950 text-slate-100 border border-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl text-sm focus:outline-none transition-all placeholder-slate-700 font-medium"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full mt-2 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 disabled:from-emerald-800 disabled:to-teal-800 text-white rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-900/30 transform active:scale-98 cursor-pointer border border-emerald-500/20"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4.5 w-4.5 animate-spin" />
+                      <span>অ্যাকাউন্ট তৈরি হচ্ছে...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>অ্যাকাউন্ট তৈরি করুন</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </>
+                  )}
+                </button>
               </form>
             )}
 
