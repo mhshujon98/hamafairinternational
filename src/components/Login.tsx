@@ -40,6 +40,8 @@ export default function Login({ onLoginSuccess }: LoginProps) {
         return 'এই ইমেইল ঠিকানাটি ইতিমধ্যে নিবন্ধিত রয়েছে। অন্য ইমেইল ব্যবহার করুন।';
       case 'auth/weak-password':
         return 'পাসওয়ার্ড অত্যন্ত দুর্বল। অন্তত ৬ অক্ষরের পাসওয়ার্ড ব্যবহার করুন।';
+      case 'auth/operation-not-allowed':
+        return 'ইমেইল ও পাসওয়ার্ড লগইন নিষ্ক্রিয় করা আছে। অনুগ্রহ করে আপনার ফায়ারবেস কনসোলে (Firebase Console > Authentication > Sign-in method) গিয়ে Email/Password সচল (Enable) করুন।';
       default:
         return 'সার্ভারে কানেক্ট করতে ব্যর্থ হয়েছে। অনুগ্রহ করে পুনরায় চেষ্টা করুন।';
     }
@@ -212,10 +214,46 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                   exit={{ opacity: 0, height: 0 }}
                   className="mb-4 overflow-hidden"
                 >
-                  <div className="bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-semibold p-3.5 rounded-xl flex items-start gap-2">
-                    <span className="mt-0.5 shrink-0 block w-1.5 h-1.5 rounded-full bg-rose-400"></span>
-                    <span className="leading-relaxed">{error}</span>
-                  </div>
+                  {error.includes("ফায়ারবেস কনসোলে") ? (
+                    <div className="bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs p-4 rounded-xl space-y-3">
+                      <div className="flex items-center gap-2 font-bold text-amber-400">
+                        <span className="flex h-2 w-2 relative">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                        </span>
+                        <span>ফায়ারবেস কনফিগারেশন করা প্রয়োজন (Action Required)</span>
+                      </div>
+                      <p className="leading-relaxed text-[11px] text-slate-300">
+                        আপনার ফায়ারবেস প্রজেক্টে ইমেইল/পাসওয়ার্ড দিয়ে লগইন করার সুবিধাটি এখনও সচল করা হয়নি। এটি সচল করতে নিচের সহজ ৩টি ধাপ অনুসরণ করুন:
+                      </p>
+                      <ol className="list-decimal pl-4 space-y-2 text-[11px] text-slate-400">
+                        <li>
+                          <a 
+                            href={`https://console.firebase.google.com/project/${auth.app.options.projectId || 'animated-berm-xwfkz'}/authentication/providers`} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-blue-400 hover:text-blue-300 font-bold underline inline-flex items-center gap-1"
+                          >
+                            Firebase Console-এ এই লিংকে যান ↗
+                          </a>
+                        </li>
+                        <li>
+                          সেখান থেকে <strong className="text-slate-200 font-bold">"Email/Password"</strong> অপশনে ক্লিক করুন।
+                        </li>
+                        <li>
+                          <strong className="text-slate-200 font-bold">"Enable"</strong> সিলেক্ট করে সেটিংসটি সংরক্ষণ (Save) করুন।
+                        </li>
+                      </ol>
+                      <p className="text-[10px] text-slate-500 italic mt-1 pt-2 border-t border-slate-800/80">
+                        সেটিংস সেভ করার পর এই পেজটি রিফ্রেশ দিয়ে আবার চেষ্টা করুন।
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-semibold p-3.5 rounded-xl flex items-start gap-2">
+                      <span className="mt-0.5 shrink-0 block w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+                      <span className="leading-relaxed">{error}</span>
+                    </div>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
