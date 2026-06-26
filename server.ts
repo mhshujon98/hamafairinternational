@@ -143,6 +143,16 @@ async function initializeDatabase() {
     console.warn("Could not create passengers table:", e);
   }
 
+  // Ensure the agent_id column exists in passengers table (if table was already created earlier without it)
+  try {
+    await db.execute(sql`
+      ALTER TABLE passengers ADD COLUMN IF NOT EXISTS agent_id TEXT;
+    `);
+    console.log("Ensured agent_id column exists in passengers table.");
+  } catch (e) {
+    console.warn("Could not add agent_id column to passengers table:", e);
+  }
+
   // 3. Create agents table if not exists
   try {
     await db.execute(sql`
