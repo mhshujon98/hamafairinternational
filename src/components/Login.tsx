@@ -1,104 +1,35 @@
 import React, { useState } from 'react';
-import { PlaneTakeoff, ShieldCheck, ArrowRight, Loader2, Mail, Lock, User, Phone } from 'lucide-react';
+import { PlaneTakeoff, ShieldCheck, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { auth, googleAuthProvider } from '../lib/firebase';
+import { signInWithPopup } from 'firebase/auth';
 
 interface LoginProps {
   onLoginSuccess: (token: string, email: string) => void;
 }
 
 export default function Login({ onLoginSuccess }: LoginProps) {
-  const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
-  
-  // Registration States
-  const [registerName, setRegisterName] = useState('');
-  const [registerEmail, setRegisterEmail] = useState('');
-  const [registerPhone, setRegisterPhone] = useState('');
-  const [registerPassword, setRegisterPassword] = useState('');
-
-  // Login States
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!loginEmail.trim() || !loginPassword.trim()) {
-      setError('অনুগ্রহ করে ইমেইল এবং পাসওয়ার্ড দুটিই পূরণ করুন।');
-      return;
-    }
-
+  const handleGoogleSignIn = async () => {
     setLoading(true);
     setError(null);
-    setSuccessMsg(null);
-
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: loginEmail.trim(),
-          password: loginPassword.trim()
-        }),
-      });
-
-      const data = await res.json();
-      
-      if (!res.ok) {
-        throw new Error(data.error || 'লগইন করতে ব্যর্থ হয়েছে।');
-      }
-
-      localStorage.setItem('hamaf_auth_token', data.token);
-      localStorage.setItem('hamaf_auth_email', data.email);
-      onLoginSuccess(data.token, data.email);
+      const result = await signInWithPopup(auth, googleAuthProvider);
+      const user = result.user;
+      const idToken = await user.getIdToken();
+      onLoginSuccess(idToken, user.email || '');
     } catch (err: any) {
-      setError(err.message || 'সার্ভার কানেকশন ত্রুটি। অনুগ্রহ করে আবার চেষ্টা করুন।');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!registerName.trim() || !registerEmail.trim() || !registerPassword.trim()) {
-      setError('অনুগ্রহ করে সব প্রয়োজনীয় ঘরগুলো পূরণ করুন।');
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    setSuccessMsg(null);
-
-    try {
-      const res = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: registerName.trim(),
-          email: registerEmail.trim(),
-          phone: registerPhone.trim(),
-          password: registerPassword.trim()
-        }),
-      });
-
-      const data = await res.json();
-      
-      if (!res.ok) {
-        throw new Error(data.error || 'অ্যাকাউন্ট তৈরি করতে ব্যর্থ হয়েছে।');
+      console.error("Google Sign-In failed:", err);
+      // Clean up common firebase errors into friendly Bengali messages
+      if (err.code === 'auth/popup-closed-by-user') {
+        setError('লগইন পপআপটি বন্ধ করা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।');
+      } else if (err.code === 'auth/blocked-by-popup-killer') {
+        setError('পপআপ ব্লকার সক্রিয় আছে। অনুগ্রহ করে পপআপ অনুমোদন করুন।');
+      } else {
+        setError(err.message || 'গুগল লগইন ব্যর্থ হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।');
       }
-
-      setSuccessMsg(data.message);
-      
-      localStorage.setItem('hamaf_auth_token', data.token);
-      localStorage.setItem('hamaf_auth_email', data.email);
-      
-      setTimeout(() => {
-        onLoginSuccess(data.token, data.email);
-      }, 1000);
-    } catch (err: any) {
-      setError(err.message || 'সার্ভার কানেকশন ত্রুটি। অনুগ্রহ করে আবার চেষ্টা করুন।');
     } finally {
       setLoading(false);
     }
@@ -123,7 +54,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
               Hamaf Air International
             </h1>
             <span className="text-[10px] text-blue-400 font-bold uppercase tracking-widest mt-1 block">
-              Travel Agency Database
+              Travel Agency Database (Cloud SQL)
             </span>
           </div>
         </div>
@@ -141,7 +72,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
             className="bg-slate-900/85 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-md"
           >
             {/* Card Icon & Header */}
-            <div className="text-center space-y-3 mb-6">
+            <div className="text-center space-y-3 mb-8">
               <div className="mx-auto p-4 bg-blue-600/15 text-blue-500 rounded-2xl w-fit border border-blue-500/20 shadow-inner">
                 <ShieldCheck className="h-8 w-8" />
               </div>
@@ -150,43 +81,9 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                   হ্যামাফ এয়ার ট্রাভেল ডাটাবেজ
                 </h2>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  আপনার একাউন্টে লগইন করুন অথবা সম্পূর্ণ নতুন একাউন্ট তৈরি করে ডাটাবেজে প্রবেশ করুন।
+                  নিরাপদ ক্লাউড এসকিউএল (Google Cloud SQL) ডাটাবেজে প্রবেশ করতে আপনার গুগল অ্যাকাউন্ট ব্যবহার করে লগইন করুন।
                 </p>
               </div>
-            </div>
-
-            {/* Custom Tabs Bar */}
-            <div className="flex bg-slate-950 p-1 rounded-xl mb-6 border border-slate-800">
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveTab('login');
-                  setError(null);
-                  setSuccessMsg(null);
-                }}
-                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                  activeTab === 'login'
-                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                লগইন (Sign In)
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveTab('register');
-                  setError(null);
-                  setSuccessMsg(null);
-                }}
-                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                  activeTab === 'register'
-                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                নিবন্ধন (Sign Up)
-              </button>
             </div>
 
             {/* Error Message Box */}
@@ -196,7 +93,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="mb-4 overflow-hidden"
+                  className="mb-6 overflow-hidden"
                 >
                   <div className="bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-semibold p-3.5 rounded-xl flex items-start gap-2">
                     <span className="mt-0.5 shrink-0 block w-1.5 h-1.5 rounded-full bg-rose-400"></span>
@@ -206,187 +103,46 @@ export default function Login({ onLoginSuccess }: LoginProps) {
               )}
             </AnimatePresence>
 
-            {/* Success Message Box */}
-            <AnimatePresence mode="wait">
-              {successMsg && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="mb-4 overflow-hidden"
-                >
-                  <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-semibold p-3.5 rounded-xl flex items-start gap-2">
-                    <span className="mt-0.5 shrink-0 block w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                    <span className="leading-relaxed">{successMsg}</span>
-                  </div>
-                </motion.div>
+            {/* Google Sign-In Button */}
+            <button
+              onClick={handleGoogleSignIn}
+              disabled={loading}
+              className="w-full py-3.5 px-4 bg-white hover:bg-slate-50 disabled:bg-slate-100 text-slate-900 font-bold rounded-xl text-sm flex items-center justify-center gap-3 transition-all transform active:scale-[0.99] cursor-pointer shadow-lg shadow-white/5 border border-slate-200"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+                  <span className="text-slate-600">গুগল সাইন-ইন হচ্ছে...</span>
+                </>
+              ) : (
+                <>
+                  <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24">
+                    <path
+                      fill="#4285F4"
+                      d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v3.92h6.61c-.29 1.5-.1.31-3.1 3.32v2.75h4.99c2.92-2.69 4.61-6.64 4.61-11.32z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-4.99-2.75c-1.39.93-3.17 1.49-4.94 1.49-3.78 0-6.98-2.56-8.12-6.02H1.05v3.13C3.03 21.84 7.21 24 12 24z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M3.88 14.82A7.21 7.21 0 013.5 12c0-.98.17-1.92.47-2.82V6.05H1.05A11.964 11.964 0 000 12c0 2.23.6 4.31 1.66 6.13l2.22-3.31z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.43-3.43C17.95 1.19 15.24 0 12 0 7.21 0 3.03 2.16 1.05 6.05l2.83 2.82c1.14-3.46 4.34-6.12 8.12-6.12z"
+                    />
+                  </svg>
+                  <span>Google দিয়ে লগইন করুন (Google Sign In)</span>
+                </>
               )}
-            </AnimatePresence>
+            </button>
 
-            {/* Step 1: LOGIN FORM */}
-            {activeTab === 'login' && (
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div className="space-y-1.5">
-                  <label htmlFor="login-email-field" className="text-xs font-bold text-slate-300 block">
-                    ইমেইল ঠিকানা (Email)
-                  </label>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
-                      <Mail className="h-4 w-4" />
-                    </span>
-                    <input
-                      id="login-email-field"
-                      type="email"
-                      required
-                      placeholder="যেমন: admin@example.com"
-                      value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 bg-slate-950 text-slate-100 border border-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl text-sm focus:outline-none transition-all placeholder-slate-700 font-medium"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label htmlFor="login-password-field" className="text-xs font-bold text-slate-300 block">
-                    পাসওয়ার্ড (Password)
-                  </label>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
-                      <Lock className="h-4 w-4" />
-                    </span>
-                    <input
-                      id="login-password-field"
-                      type="password"
-                      required
-                      placeholder="পাসওয়ার্ড লিখুন"
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 bg-slate-950 text-slate-100 border border-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl text-sm focus:outline-none transition-all placeholder-slate-700 font-medium"
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full mt-2 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-blue-800 disabled:to-indigo-800 text-white rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-900/30 transform active:scale-98 cursor-pointer border border-blue-500/20"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="h-4.5 w-4.5 animate-spin" />
-                      <span>যাচাই করা হচ্ছে...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>লগইন করুন</span>
-                      <ArrowRight className="h-4 w-4" />
-                    </>
-                  )}
-                </button>
-              </form>
-            )}
-
-            {/* Step 2: REGISTRATION FORM */}
-            {activeTab === 'register' && (
-              <form onSubmit={handleRegister} className="space-y-4">
-                <div className="space-y-1.5">
-                  <label htmlFor="reg-name-field" className="text-xs font-bold text-slate-300 block">
-                    আপনার নাম (Full Name)
-                  </label>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
-                      <User className="h-4 w-4" />
-                    </span>
-                    <input
-                      id="reg-name-field"
-                      type="text"
-                      required
-                      placeholder="যেমন: হাফেজ মোঃ মাহমুদুল হাসান"
-                      value={registerName}
-                      onChange={(e) => setRegisterName(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 bg-slate-950 text-slate-100 border border-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl text-sm focus:outline-none transition-all placeholder-slate-700 font-medium"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label htmlFor="reg-email-field" className="text-xs font-bold text-slate-300 block">
-                    ইমেইল ঠিকানা (Email)
-                  </label>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
-                      <Mail className="h-4 w-4" />
-                    </span>
-                    <input
-                      id="reg-email-field"
-                      type="email"
-                      required
-                      placeholder="যেমন: rina@gmail.com"
-                      value={registerEmail}
-                      onChange={(e) => setRegisterEmail(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 bg-slate-950 text-slate-100 border border-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl text-sm focus:outline-none transition-all placeholder-slate-700 font-medium"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label htmlFor="reg-phone-field" className="text-xs font-bold text-slate-300 block">
-                    মোবাইল নম্বর (Phone - ঐচ্ছিক)
-                  </label>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
-                      <Phone className="h-4 w-4" />
-                    </span>
-                    <input
-                      id="reg-phone-field"
-                      type="tel"
-                      placeholder="যেমন: 01712345678"
-                      value={registerPhone}
-                      onChange={(e) => setRegisterPhone(e.target.value.replace(/[^0-9+]/g, ''))}
-                      className="w-full pl-10 pr-4 py-3 bg-slate-950 text-slate-100 border border-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl text-sm focus:outline-none transition-all placeholder-slate-700 font-medium"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label htmlFor="reg-password-field" className="text-xs font-bold text-slate-300 block">
-                    পাসওয়ার্ড (Password - অন্তত ৬ অক্ষর)
-                  </label>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
-                      <Lock className="h-4 w-4" />
-                    </span>
-                    <input
-                      id="reg-password-field"
-                      type="password"
-                      required
-                      placeholder="পাসওয়ার্ড লিখুন"
-                      value={registerPassword}
-                      onChange={(e) => setRegisterPassword(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 bg-slate-950 text-slate-100 border border-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl text-sm focus:outline-none transition-all placeholder-slate-700 font-medium"
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full mt-2 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 disabled:from-emerald-800 disabled:to-teal-800 text-white rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-900/30 transform active:scale-98 cursor-pointer border border-emerald-500/20"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="h-4.5 w-4.5 animate-spin" />
-                      <span>অ্যাকাউন্ট তৈরি হচ্ছে...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>অ্যাকাউন্ট তৈরি করুন</span>
-                      <ArrowRight className="h-4 w-4" />
-                    </>
-                  )}
-                </button>
-              </form>
-            )}
+            {/* Extra assurance */}
+            <div className="mt-6 flex items-center justify-center gap-2 text-xs text-slate-500">
+              <span>🔒 Firebase Auth দ্বারা সম্পূর্ণ সুরক্ষিত</span>
+            </div>
 
           </motion.div>
 
@@ -394,10 +150,10 @@ export default function Login({ onLoginSuccess }: LoginProps) {
           <div className="mt-6 text-center space-y-1">
             <p className="text-[10px] text-slate-600 font-bold uppercase tracking-widest flex items-center justify-center gap-1.5">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              Secure Zero-Trust Data Isolation Enabled
+              Secure Google Cloud SQL Database Active
             </p>
             <p className="text-[9px] text-slate-700 max-w-xs mx-auto">
-              আপনার প্রবেশকৃত তথ্য সার্ভার-সাইড সেশন দ্বারা সুরক্ষিত। এক ব্যবহারকারীর তথ্য অন্য কোনো ব্যবহারকারী কখনো দেখতে পারবেন না।
+              আপনার প্রবেশকৃত তথ্য ক্লাউড এসকিউএল ডাটাবেজে সম্পূর্ণ পৃথক সেশন দ্বারা সুরক্ষিত। এক ব্যবহারকারীর তথ্য অন্য কেউ দেখতে পারেন না।
             </p>
           </div>
 

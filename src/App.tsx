@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Passenger } from './types';
 import Dashboard from './components/Dashboard';
+import { auth } from './lib/firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 import PassengerList from './components/PassengerList';
 import PassengerForm from './components/PassengerForm';
 import PassengerDetails from './components/PassengerDetails';
@@ -36,33 +38,30 @@ export default function App() {
   const [editingPassenger, setEditingPassenger] = useState<Passenger | null>(null);
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
 
-  // Load and verify auth session on mount
+  // Load and verify auth session on mount using Firebase onAuthStateChanged
   useEffect(() => {
-    const savedToken = localStorage.getItem('hamaf_auth_token');
-    const savedEmail = localStorage.getItem('hamaf_auth_email');
-    
-    if (savedToken && savedEmail) {
-      // Verify token with server
-      fetch('/api/auth/me', {
-        headers: { 'Authorization': `Bearer ${savedToken}` }
-      })
-      .then(res => {
-        if (res.ok) {
-          setToken(savedToken);
-          setUserEmail(savedEmail);
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          const idToken = await user.getIdToken();
+          setToken(idToken);
+          setUserEmail(user.email);
           setIsAuthenticated(true);
-        } else {
-          // Token is invalid/expired
-          handleLogout();
+        } catch (e) {
+          console.error("Error getting idToken", e);
+          setIsAuthenticated(false);
         }
-      })
-      .catch(err => {
-        console.error("Auth verification failed, assuming offline / session expired", err);
-        handleLogout();
-      });
-    } else {
-      setIsAuthenticated(false);
-    }
+      } else {
+        setToken(null);
+        setUserEmail(null);
+        setIsAuthenticated(false);
+        setPassengers([]);
+        setSelectedPassenger(null);
+        setEditingPassenger(null);
+      }
+    });
+
+    return () => unsubscribe();
   }, []);
 
   // Fetch passengers whenever authentication state changes to true
@@ -100,26 +99,11 @@ export default function App() {
   };
 
   const handleLogout = async () => {
-    const currentToken = token || localStorage.getItem('hamaf_auth_token');
-    if (currentToken) {
-      try {
-        await fetch('/api/auth/logout', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${currentToken}` }
-        });
-      } catch (e) {
-        console.error("Logout request failed", e);
-      }
+    try {
+      await signOut(auth);
+    } catch (e) {
+      console.error("Logout failed", e);
     }
-    
-    localStorage.removeItem('hamaf_auth_token');
-    localStorage.removeItem('hamaf_auth_email');
-    setToken(null);
-    setUserEmail(null);
-    setIsAuthenticated(false);
-    setPassengers([]);
-    setSelectedPassenger(null);
-    setEditingPassenger(null);
   };
 
   // Add or edit passenger handler (Using safe server API)

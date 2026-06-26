@@ -1,107 +1,16 @@
 import express from "express";
 import path from "path";
-import fs from "fs";
 import crypto from "crypto";
 import { createServer as createViteServer } from "vite";
+import { db } from "./src/db/index.ts";
+import { passengers, users } from "./src/db/schema.ts";
+import { eq, and } from "drizzle-orm";
+import { adminAuth } from "./src/lib/firebase-admin.ts";
 
-// Define Database file
-const DB_FILE = path.join(process.cwd(), "server-db.json");
+const PORT = 3000;
 
-// Passenger Types
-interface PaymentRecord {
-  id: string;
-  amount: number;
-  date: string;
-  receiptNo: string;
-  paymentMethod: string;
-  remarks?: string;
-}
-
-interface Passenger {
-  id: string;
-  name: string;
-  passportNumber: string;
-  phone: string;
-  email?: string;
-  destination: string;
-  flightNumber?: string;
-  travelDate: string;
-  visaStatus: 'Pending' | 'Approved' | 'Rejected';
-  ticketStatus: 'Not Booked' | 'Booked' | 'Issued';
-  paymentStatus: 'Paid' | 'Due' | 'Partial';
-  totalAmount: number;
-  amountPaid: number;
-  amountDue: number;
-  remarks?: string;
-  ownerPhone?: string; // The user who owns this record
-  ownerEmail?: string; // The email of the user who owns this record
-  createdAt: string;
-  updatedAt: string;
-  payments?: PaymentRecord[];
-  
-  // Custom travel process steps
-  passportSubmitDate?: string;
-  passportExpiryDate?: string;
-  passportSubmitRemarks?: string;
-  medicalStatus?: 'Pending' | 'Fit' | 'Unfit' | 'In Progress';
-  medicalDate?: string;
-  medicalExpiryDate?: string;
-  medicalRemarks?: string;
-  mofaStatus?: 'Pending' | 'Done' | 'N/A';
-  mofaNumber?: string;
-  mofaDate?: string;
-  mofaExpiryDate?: string;
-  visaStampingStatus?: 'Pending' | 'Done' | 'N/A';
-  visaStampingDate?: string;
-  visaExpiryDate?: string;
-  fingerprintStatus?: 'Pending' | 'Done' | 'N/A';
-  fingerprintDate?: string;
-  taqamulStatus?: 'Pending' | 'Done' | 'N/A' | 'Failed';
-  taqamulProfession?: string;
-  taqamulDate?: string;
-  taqamulExpiryDate?: string;
-  policeClearanceStatus?: 'Pending' | 'Done' | 'Not Required';
-  policeClearanceDate?: string;
-  policeClearanceExpiryDate?: string;
-  okToBoardStatus?: 'Pending' | 'Done' | 'N/A';
-  okToBoardDate?: string;
-  bmetTrainingStatus?: 'Pending' | 'Done' | 'N/A';
-  bmetTrainingDate?: string;
-  bmetTrainingExpiryDate?: string;
-  bmetTrainingRemarks?: string;
-  manpowerStatus?: 'Pending' | 'Done' | 'N/A';
-  manpowerDate?: string;
-  manpowerRemarks?: string;
-  airTicketStatus?: 'Pending' | 'Done' | 'N/A';
-  airTicketDate?: string;
-  airTicketRemarks?: string;
-}
-
-interface User {
-  id: string;
-  email: string;
-  passwordHash: string;
-  name: string;
-  phone?: string;
-  createdAt: string;
-}
-
-interface Session {
-  token: string;
-  email: string;
-  expiresAt: number;
-}
-
-interface DatabaseSchema {
-  users: User[];
-  passengers: Passenger[];
-  sessions: Session[];
-}
-
-// Initial Passengers seeded with owner phones matching their phone field for demo purposes
-const INITIAL_PASSENGERS: Omit<Passenger, 'ownerPhone'>[] = [
+const INITIAL_PASSENGERS = [
   {
-    id: 'pass_1',
     name: 'হাফেজ মোঃ মাহমুদুল হাসান (Hafez Md. Mahmudul Hasan)',
     passportNumber: 'EF1049283',
     phone: '01712345678',
@@ -173,7 +82,6 @@ const INITIAL_PASSENGERS: Omit<Passenger, 'ownerPhone'>[] = [
     updatedAt: '2026-06-22T14:15:00.000Z'
   },
   {
-    id: 'pass_2',
     name: 'রিনা আক্তার (Rina Akhter)',
     passportNumber: 'EG0987123',
     phone: '01898765432',
@@ -212,7 +120,6 @@ const INITIAL_PASSENGERS: Omit<Passenger, 'ownerPhone'>[] = [
     updatedAt: '2026-06-21T08:24:00.000Z'
   },
   {
-    id: 'pass_3',
     name: 'মোঃ ফয়সাল আহমেদ (Md. Faisal Ahmed)',
     passportNumber: 'EH8372910',
     phone: '01555443322',
@@ -262,7 +169,6 @@ const INITIAL_PASSENGERS: Omit<Passenger, 'ownerPhone'>[] = [
     updatedAt: '2026-06-23T16:50:00.000Z'
   },
   {
-    id: 'pass_4',
     name: 'আব্দুর রহমান (Abdur Rahman)',
     passportNumber: 'EE7239104',
     phone: '01911223344',
@@ -297,7 +203,6 @@ const INITIAL_PASSENGERS: Omit<Passenger, 'ownerPhone'>[] = [
     updatedAt: '2026-06-24T12:00:00.000Z'
   },
   {
-    id: 'pass_5',
     name: 'মোঃ কামরুল ইসলাম (Md. Kamrul Islam)',
     passportNumber: 'EF4422991',
     phone: '01677889900',
@@ -329,342 +234,192 @@ const INITIAL_PASSENGERS: Omit<Passenger, 'ownerPhone'>[] = [
   }
 ];
 
-// Helper to read database
-function readDB(): DatabaseSchema {
+// Authentication Middleware
+const authenticateToken = async (req: any, res: any, next: any) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+
+  if (!token) {
+    return res.status(401).json({ error: "অনুমতি নেই। অনুগ্রহ করে লগইন করুন।" });
+  }
+
   try {
-    if (fs.existsSync(DB_FILE)) {
-      const data = fs.readFileSync(DB_FILE, "utf-8");
-      const parsed = JSON.parse(data);
-      if (!parsed.users) parsed.users = [];
-      if (!parsed.passengers) parsed.passengers = [];
-      if (!parsed.sessions) parsed.sessions = [];
-      return parsed;
+    const decodedToken = await adminAuth.verifyIdToken(token);
+    const email = decodedToken.email;
+    if (!email) {
+      return res.status(401).json({ error: "অনুমতি নেই। টোকেনটিতে কোনো ইমেইল পাওয়া যায়নি।" });
     }
-  } catch (e) {
-    console.error("Error reading database file, using defaults", e);
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    // Sync user in postgres
+    const usersList = await db.select().from(users).where(eq(users.uid, decodedToken.uid));
+    if (usersList.length === 0) {
+      await db.insert(users).values({
+        uid: decodedToken.uid,
+        email: cleanEmail,
+        name: decodedToken.name || null,
+        phone: decodedToken.phone_number || null,
+      }).onConflictDoNothing();
+    }
+
+    req.user = {
+      email: cleanEmail,
+      uid: decodedToken.uid,
+      name: decodedToken.name || ""
+    };
+    next();
+  } catch (error) {
+    console.error("Error verifying Firebase ID token:", error);
+    return res.status(403).json({ error: "লগইন সেশন শেষ হয়েছে বা ভুল টোকেন। আবার লগইন করুন।" });
   }
-  
-  const defaultDB: DatabaseSchema = {
-    users: [],
-    passengers: [],
-    sessions: []
-  };
-  
-  writeDB(defaultDB);
-  return defaultDB;
-}
+};
 
-// Helper to write database
-function writeDB(data: DatabaseSchema) {
-  try {
-    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), "utf-8");
-  } catch (e) {
-    console.error("Error writing database file", e);
-  }
-}
-
-// Helper to hash password using sha256
-function hashPassword(password: string): string {
-  return crypto.createHash("sha256").update(password).digest("hex");
-}
-
-// Start Server Wrapper
 async function startServer() {
   const app = express();
-  const PORT = 3000;
 
   app.use(express.json());
 
-  // Clean expired Sessions periodically
-  setInterval(() => {
-    const db = readDB();
-    const now = Date.now();
-    let changed = false;
-
-    const activeSessions = db.sessions.filter((s) => s.expiresAt > now);
-    if (activeSessions.length !== db.sessions.length) {
-      db.sessions = activeSessions;
-      changed = true;
-    }
-
-    if (changed) {
-      writeDB(db);
-    }
-  }, 10 * 60 * 1000);
-
-  // Authenticate Middleware
-  const authenticateToken = (req: any, res: any, next: any) => {
-    const authHeader = req.headers["authorization"];
-    const token = authHeader && authHeader.split(" ")[1];
-
-    if (!token) {
-      return res.status(401).json({ error: "অনুমতি নেই। অনুগ্রহ করে লগইন করুন।" });
-    }
-
-    const db = readDB();
-    const session = db.sessions.find((s) => s.token === token);
-
-    if (!session || session.expiresAt < Date.now()) {
-      return res.status(403).json({ error: "লগইন সেশন শেষ হয়েছে। আবার লগইন করুন।" });
-    }
-
-    req.user = { email: session.email };
-    next();
-  };
-
   // --- AUTH ENDPOINTS ---
 
-  // User Registration
-  app.post("/api/auth/register", (req, res) => {
-    const { name, email, phone, password } = req.body;
-
-    if (!name || !email || !password) {
-      return res.status(400).json({ error: "নাম, ইমেইল এবং পাসওয়ার্ড আবশ্যক।" });
-    }
-
-    const cleanEmail = email.trim().toLowerCase();
-    if (!cleanEmail.includes("@")) {
-      return res.status(400).json({ error: "সঠিক ইমেইল ঠিকানা প্রদান করুন।" });
-    }
-
-    if (password.length < 6) {
-      return res.status(400).json({ error: "পাসওয়ার্ড অন্তত ৬ অক্ষরের হতে হবে।" });
-    }
-
-    const db = readDB();
-    const userExists = db.users.some((u) => u.email === cleanEmail);
-
-    if (userExists) {
-      return res.status(400).json({ error: "এই ইমেইল দিয়ে ইতিমধ্যে একটি অ্যাকাউন্ট তৈরি করা হয়েছে।" });
-    }
-
-    const passwordHash = hashPassword(password);
-    const newUser: User = {
-      id: "usr_" + crypto.randomBytes(8).toString("hex"),
-      name: name.trim(),
-      email: cleanEmail,
-      phone: phone ? phone.trim() : undefined,
-      passwordHash,
-      createdAt: new Date().toISOString()
-    };
-
-    db.users.push(newUser);
-
-    // Auto-seed some demo passengers for this new user so their database is not empty and they can see it working immediately!
-    const userDemos = INITIAL_PASSENGERS.map((p, idx) => ({
-      ...p,
-      id: "pass_init_" + idx + "_" + crypto.randomBytes(4).toString("hex"),
-      ownerEmail: cleanEmail,
-      ownerPhone: newUser.phone || ""
-    }));
-    db.passengers.unshift(...userDemos);
-
-    writeDB(db);
-
-    // Create session token
-    const token = crypto.randomBytes(32).toString("hex");
-    const sessionExpiresAt = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
-
-    db.sessions.push({
-      token,
-      email: cleanEmail,
-      expiresAt: sessionExpiresAt
-    });
-    writeDB(db);
-
-    res.status(201).json({
-      success: true,
-      token,
-      email: cleanEmail,
-      name: newUser.name,
-      message: "অ্যাকাউন্ট সফলভাবে তৈরি করা হয়েছে।"
-    });
-  });
-
-  // User Login
-  app.post("/api/auth/login", (req, res) => {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({ error: "ইমেইল এবং পাসওয়ার্ড আবশ্যক।" });
-    }
-
-    const cleanEmail = email.trim().toLowerCase();
-    const db = readDB();
-    
-    const user = db.users.find((u) => u.email === cleanEmail);
-    if (!user) {
-      return res.status(401).json({ error: "ভুল ইমেইল বা পাসওয়ার্ড। অনুগ্রহ করে আবার চেষ্টা করুন।" });
-    }
-
-    const passwordHash = hashPassword(password);
-    if (user.passwordHash !== passwordHash) {
-      return res.status(401).json({ error: "ভুল ইমেইল বা পাসওয়ার্ড। অনুগ্রহ করে আবার চেষ্টা করুন।" });
-    }
-
-    // Create session token
-    const token = crypto.randomBytes(32).toString("hex");
-    const sessionExpiresAt = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
-
-    db.sessions.push({
-      token,
-      email: cleanEmail,
-      expiresAt: sessionExpiresAt
-    });
-    writeDB(db);
-
-    res.json({
-      success: true,
-      token,
-      email: cleanEmail,
-      name: user.name,
-      message: "সফলভাবে লগইন হয়েছে।"
-    });
-  });
-
-  // Get Current Authenticated User
   app.get("/api/auth/me", authenticateToken, (req: any, res) => {
-    const db = readDB();
-    const user = db.users.find((u) => u.email === req.user.email);
-    
-    if (!user) {
-      return res.status(404).json({ error: "ব্যবহারকারী খুঁজে পাওয়া যায়নি।" });
-    }
-
     res.json({
       success: true,
-      email: user.email,
-      name: user.name,
-      phone: user.phone
+      email: req.user.email,
+      name: req.user.name
     });
   });
 
-  // Logout
   app.post("/api/auth/logout", (req: any, res) => {
-    const authHeader = req.headers["authorization"];
-    const token = authHeader && authHeader.split(" ")[1];
-
-    if (token) {
-      const db = readDB();
-      db.sessions = db.sessions.filter((s) => s.token !== token);
-      writeDB(db);
-    }
-
     res.json({ success: true, message: "লগআউট সফল হয়েছে।" });
   });
 
   // --- SECURE PASSENGER ENDPOINTS ---
-  // Ensure that users can ONLY access or modify passengers that they own!
 
-  // 1. Get User's Passengers
-  app.get("/api/passengers", authenticateToken, (req: any, res) => {
-    const db = readDB();
-    const myPassengers = db.passengers.filter((p) => p.ownerEmail === req.user.email);
-    res.json(myPassengers);
+  // 1. Get User's Passengers (with auto-seeding if empty)
+  app.get("/api/passengers", authenticateToken, async (req: any, res) => {
+    try {
+      const myPassengers = await db.select().from(passengers).where(eq(passengers.ownerEmail, req.user.email));
+      
+      if (myPassengers.length === 0) {
+        // Auto-seed for the user
+        const userDemos = INITIAL_PASSENGERS.map((p, idx) => ({
+          ...p,
+          id: "pass_demo_" + idx + "_" + crypto.randomBytes(4).toString("hex"),
+          ownerEmail: req.user.email,
+        }));
+        
+        await db.insert(passengers).values(userDemos);
+        return res.json(userDemos);
+      }
+      
+      res.json(myPassengers);
+    } catch (e: any) {
+      console.error("Error fetching passengers:", e);
+      res.status(500).json({ error: "যাত্রী তালিকা লোড করতে ব্যর্থ হয়েছে।" });
+    }
   });
 
-  // 2. Add Passenger (Auto-assign ownership)
-  app.post("/api/passengers", authenticateToken, (req: any, res) => {
+  // 2. Add Passenger
+  app.post("/api/passengers", authenticateToken, async (req: any, res) => {
     const passengerData = req.body;
     
     if (!passengerData.name || !passengerData.passportNumber) {
       return res.status(400).json({ error: "যাত্রীর নাম এবং পাসপোর্ট নম্বর আবশ্যক।" });
     }
 
-    const db = readDB();
-    
-    const newPassenger: Passenger = {
-      ...passengerData,
-      id: "pass_" + crypto.randomBytes(8).toString("hex"),
-      ownerEmail: req.user.email, // STRICT SECURITY: Auto-bind to logged-in user email
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
+    try {
+      const newPassenger = {
+        ...passengerData,
+        id: "pass_" + crypto.randomBytes(8).toString("hex"),
+        ownerEmail: req.user.email,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        payments: passengerData.payments || [],
+        totalAmount: Number(passengerData.totalAmount) || 0,
+        amountPaid: Number(passengerData.amountPaid) || 0,
+        amountDue: Number(passengerData.amountDue) || 0
+      };
 
-    db.passengers.unshift(newPassenger);
-    writeDB(db);
-
-    res.status(201).json(newPassenger);
+      await db.insert(passengers).values(newPassenger);
+      res.status(201).json(newPassenger);
+    } catch (e: any) {
+      console.error("Error adding passenger:", e);
+      res.status(500).json({ error: "যাত্রী যোগ করতে ব্যর্থ হয়েছে।" });
+    }
   });
 
-  // 3. Update Passenger (With ownership check)
-  app.put("/api/passengers/:id", authenticateToken, (req: any, res) => {
+  // 3. Update Passenger
+  app.put("/api/passengers/:id", authenticateToken, async (req: any, res) => {
     const { id } = req.params;
     const updateData = req.body;
 
-    const db = readDB();
-    const passengerIndex = db.passengers.findIndex((p) => p.id === id);
+    try {
+      const existing = await db.select().from(passengers).where(and(eq(passengers.id, id), eq(passengers.ownerEmail, req.user.email)));
+      
+      if (existing.length === 0) {
+        return res.status(404).json({ error: "যাত্রী খুঁজে পাওয়া যায়নি বা আপনার এই যাত্রীর তথ্য পরিবর্তন করার অনুমতি নেই।" });
+      }
 
-    if (passengerIndex === -1) {
-      return res.status(404).json({ error: "যাত্রী খুঁজে পাওয়া যায়নি।" });
+      const passenger = existing[0];
+
+      const updatedPassenger = {
+        ...passenger,
+        ...updateData,
+        id: passenger.id,
+        ownerEmail: passenger.ownerEmail,
+        createdAt: passenger.createdAt,
+        updatedAt: new Date().toISOString(),
+        payments: updateData.payments || passenger.payments || [],
+        totalAmount: Number(updateData.totalAmount === undefined ? passenger.totalAmount : updateData.totalAmount),
+        amountPaid: Number(updateData.amountPaid === undefined ? passenger.amountPaid : updateData.amountPaid),
+        amountDue: Number(updateData.amountDue === undefined ? passenger.amountDue : updateData.amountDue)
+      };
+
+      await db.update(passengers).set(updatedPassenger).where(eq(passengers.id, id));
+      res.json(updatedPassenger);
+    } catch (e: any) {
+      console.error("Error updating passenger:", e);
+      res.status(500).json({ error: "যাত্রী তথ্য আপডেট করতে ব্যর্থ হয়েছে।" });
     }
-
-    const passenger = db.passengers[passengerIndex];
-
-    // STRICT SECURITY: Verify ownership before allowing update
-    if (passenger.ownerEmail !== req.user.email) {
-      return res.status(403).json({ error: "আপনার এই যাত্রীর তথ্য পরিবর্তন করার অনুমতি নেই।" });
-    }
-
-    // Keep immutable and secure fields
-    const updatedPassenger: Passenger = {
-      ...passenger,
-      ...updateData,
-      id: passenger.id,
-      ownerEmail: passenger.ownerEmail, // Immutable
-      createdAt: passenger.createdAt, // Immutable
-      updatedAt: new Date().toISOString()
-    };
-
-    db.passengers[passengerIndex] = updatedPassenger;
-    writeDB(db);
-
-    res.json(updatedPassenger);
   });
 
-  // 4. Delete Passenger (With ownership check)
-  app.delete("/api/passengers/:id", authenticateToken, (req: any, res) => {
+  // 4. Delete Passenger
+  app.delete("/api/passengers/:id", authenticateToken, async (req: any, res) => {
     const { id } = req.params;
 
-    const db = readDB();
-    const passengerIndex = db.passengers.findIndex((p) => p.id === id);
+    try {
+      const existing = await db.select().from(passengers).where(and(eq(passengers.id, id), eq(passengers.ownerEmail, req.user.email)));
+      
+      if (existing.length === 0) {
+        return res.status(404).json({ error: "যাত্রী খুঁজে পাওয়া যায়নি বা আপনার এই যাত্রীর তথ্য ডিলিট করার অনুমতি নেই।" });
+      }
 
-    if (passengerIndex === -1) {
-      return res.status(404).json({ error: "যাত্রী খুঁজে পাওয়া যায়নি।" });
+      await db.delete(passengers).where(eq(passengers.id, id));
+      res.json({ success: true, message: "যাত্রীর তথ্য সফলভাবে ডিলিট করা হয়েছে।" });
+    } catch (e: any) {
+      console.error("Error deleting passenger:", e);
+      res.status(500).json({ error: "যাত্রী ডিলিট করতে ব্যর্থ হয়েছে।" });
     }
-
-    const passenger = db.passengers[passengerIndex];
-
-    // STRICT SECURITY: Verify ownership before allowing delete
-    if (passenger.ownerEmail !== req.user.email) {
-      return res.status(403).json({ error: "আপনার এই যাত্রীর তথ্য ডিলিট করার অনুমতি নেই।" });
-    }
-
-    db.passengers.splice(passengerIndex, 1);
-    writeDB(db);
-
-    res.json({ success: true, message: "যাত্রীর তথ্য সফলভাবে ডিলিট করা হয়েছে।" });
   });
 
-  // Reset/Seeding Route for User (Deletes only their passengers and adds default demo passengers owned by them)
-  app.post("/api/passengers/reset", authenticateToken, (req: any, res) => {
-    const db = readDB();
-    
-    // Remove current user's passengers
-    db.passengers = db.passengers.filter((p) => p.ownerEmail !== req.user.email);
-    
-    // Generate new demo passengers owned by this user
-    const userDemos = INITIAL_PASSENGERS.map((p, idx) => ({
-      ...p,
-      id: "pass_demo_" + idx + "_" + crypto.randomBytes(4).toString("hex"),
-      ownerEmail: req.user.email,
-      phone: p.phone
-    }));
+  // 5. Reset/Seeding Route
+  app.post("/api/passengers/reset", authenticateToken, async (req: any, res) => {
+    try {
+      await db.delete(passengers).where(eq(passengers.ownerEmail, req.user.email));
 
-    db.passengers.unshift(...userDemos);
-    writeDB(db);
+      const userDemos = INITIAL_PASSENGERS.map((p, idx) => ({
+        ...p,
+        id: "pass_demo_" + idx + "_" + crypto.randomBytes(4).toString("hex"),
+        ownerEmail: req.user.email,
+      }));
 
-    res.json({ success: true, passengers: userDemos });
+      await db.insert(passengers).values(userDemos);
+      res.json({ success: true, passengers: userDemos });
+    } catch (e: any) {
+      console.error("Error resetting passengers:", e);
+      res.status(500).json({ error: "ডাটাবেজ রিসেট করতে ব্যর্থ হয়েছে।" });
+    }
   });
 
   // Vite middleware for development
@@ -672,7 +427,7 @@ async function startServer() {
     const vite = await createViteServer({
       server: { 
         middlewareMode: true,
-        hmr: false // Explicitly disable HMR to avoid WebSocket port conflicts
+        hmr: false
       },
       appType: "spa",
     });
