@@ -17,6 +17,7 @@ export interface Passenger {
   passportNumber: string; // পাসপোর্ট নম্বর
   phone: string; // মোবাইল নম্বর
   email?: string; // ইমেইল
+  ownerPhone?: string; // ওনার ফোন (সিকিউরিটি ফিল্ড)
   destination: string; // গন্তব্য দেশ
   flightNumber?: string; // ফ্লাইট নম্বর
   travelDate: string; // ভ্রমণের তারিখ

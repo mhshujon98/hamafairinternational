@@ -1,30 +1,34 @@
 import { useState, useEffect } from 'react';
 import { Passenger } from './types';
-import { INITIAL_PASSENGERS } from './data';
 import Dashboard from './components/Dashboard';
 import PassengerList from './components/PassengerList';
 import PassengerForm from './components/PassengerForm';
 import PassengerDetails from './components/PassengerDetails';
+import Login from './components/Login';
 import { 
-  Compass, 
   Database, 
   LayoutDashboard, 
   PlusCircle, 
   Search, 
-  Globe, 
   Clock, 
   CheckCircle,
-  FileCode2,
-  Calendar,
-  Sparkles,
   RefreshCw,
   Plane,
-  PlaneTakeoff
+  PlaneTakeoff,
+  LogOut,
+  User,
+  ShieldAlert,
+  Loader2
 } from 'lucide-react';
 
 export default function App() {
+  const [token, setToken] = useState<string | null>(null);
+  const [userPhone, setUserPhone] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null); // null means checking, true/false means verified
+  
   const [passengers, setPassengers] = useState<Passenger[]>([]);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'database' | 'add'>('dashboard');
+  const [loadingPassengers, setLoadingPassengers] = useState<boolean>(false);
   
   // Search & Detail state
   const [headerSearch, setHeaderSearch] = useState('');
@@ -32,71 +36,191 @@ export default function App() {
   const [editingPassenger, setEditingPassenger] = useState<Passenger | null>(null);
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
 
-  // Load passengers from LocalStorage on mount
+  // Load and verify auth session on mount
   useEffect(() => {
-    const saved = localStorage.getItem('hama_fair_passengers');
-    if (saved) {
-      try {
-        setPassengers(JSON.parse(saved));
-      } catch (e) {
-        console.error("Failed to parse passengers, loading defaults", e);
-        setPassengers(INITIAL_PASSENGERS);
-      }
+    const savedToken = localStorage.getItem('hamaf_auth_token');
+    const savedPhone = localStorage.getItem('hamaf_auth_phone');
+    
+    if (savedToken && savedPhone) {
+      // Verify token with server
+      fetch('/api/auth/me', {
+        headers: { 'Authorization': `Bearer ${savedToken}` }
+      })
+      .then(res => {
+        if (res.ok) {
+          setToken(savedToken);
+          setUserPhone(savedPhone);
+          setIsAuthenticated(true);
+        } else {
+          // Token is invalid/expired
+          handleLogout();
+        }
+      })
+      .catch(err => {
+        console.error("Auth verification failed, assuming offline / session expired", err);
+        handleLogout();
+      });
     } else {
-      setPassengers(INITIAL_PASSENGERS);
-      localStorage.setItem('hama_fair_passengers', JSON.stringify(INITIAL_PASSENGERS));
+      setIsAuthenticated(false);
     }
   }, []);
 
-  // Sync passengers to LocalStorage
-  const savePassengersToStorage = (updatedList: Passenger[]) => {
-    setPassengers(updatedList);
-    localStorage.setItem('hama_fair_passengers', JSON.stringify(updatedList));
+  // Fetch passengers whenever authentication state changes to true
+  useEffect(() => {
+    if (isAuthenticated && token) {
+      fetchPassengers();
+    }
+  }, [isAuthenticated, token]);
+
+  const fetchPassengers = async () => {
+    if (!token) return;
+    setLoadingPassengers(true);
+    try {
+      const res = await fetch('/api/passengers', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPassengers(data);
+      } else if (res.status === 401 || res.status === 403) {
+        handleLogout();
+      }
+    } catch (e) {
+      console.error("Failed to fetch passengers", e);
+    } finally {
+      setLoadingPassengers(false);
+    }
   };
 
-  // Add or edit passenger handler
-  const handleFormSubmit = (formData: Omit<Passenger, 'id' | 'createdAt' | 'updatedAt'>) => {
-    if (editingPassenger) {
-      // Editing
-      const updated = passengers.map((p) => {
-        if (p.id === editingPassenger.id) {
-          return {
-            ...p,
-            ...formData,
-            updatedAt: new Date().toISOString(),
-          };
+  const handleLoginSuccess = (newToken: string, newPhone: string) => {
+    setToken(newToken);
+    setUserPhone(newPhone);
+    setIsAuthenticated(true);
+    setActiveTab('dashboard');
+  };
+
+  const handleLogout = async () => {
+    const currentToken = token || localStorage.getItem('hamaf_auth_token');
+    if (currentToken) {
+      try {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${currentToken}` }
+        });
+      } catch (e) {
+        console.error("Logout request failed", e);
+      }
+    }
+    
+    localStorage.removeItem('hamaf_auth_token');
+    localStorage.removeItem('hamaf_auth_phone');
+    setToken(null);
+    setUserPhone(null);
+    setIsAuthenticated(false);
+    setPassengers([]);
+    setSelectedPassenger(null);
+    setEditingPassenger(null);
+  };
+
+  // Add or edit passenger handler (Using safe server API)
+  const handleFormSubmit = async (formData: Omit<Passenger, 'id' | 'createdAt' | 'updatedAt' | 'ownerPhone'>) => {
+    if (!token) return;
+    
+    try {
+      if (editingPassenger) {
+        // Editing Passenger via API
+        const res = await fetch(`/api/passengers/${editingPassenger.id}`, {
+          method: 'PUT',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(formData)
+        });
+
+        if (res.ok) {
+          const updated = await res.json();
+          setPassengers(passengers.map((p) => p.id === editingPassenger.id ? updated : p));
+          setEditingPassenger(null);
+          setActiveTab('database');
+        } else {
+          const errData = await res.json();
+          alert(errData.error || 'যাত্রীর তথ্য পরিবর্তন করতে ব্যর্থ হয়েছে।');
         }
-        return p;
-      });
-      savePassengersToStorage(updated);
-      setEditingPassenger(null);
-      setActiveTab('database');
-    } else {
-      // Creating new
-      const newPassenger: Passenger = {
-        ...formData,
-        id: 'pass_' + Math.random().toString(36).substr(2, 9),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      savePassengersToStorage([newPassenger, ...passengers]);
-      setActiveTab('database');
+      } else {
+        // Creating New Passenger via API
+        const res = await fetch('/api/passengers', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(formData)
+        });
+
+        if (res.ok) {
+          const newPassenger = await res.json();
+          setPassengers([newPassenger, ...passengers]);
+          setActiveTab('database');
+        } else {
+          const errData = await res.json();
+          alert(errData.error || 'নতুন যাত্রী যোগ করতে ব্যর্থ হয়েছে।');
+        }
+      }
+    } catch (e) {
+      console.error("Error submitting passenger form", e);
+      alert('সার্ভার কানেকশন ত্রুটি। অনুগ্রহ করে আবার চেষ্টা করুন।');
     }
   };
 
   // Live update passenger details (installments) from modal
-  const handleUpdatePassenger = (updatedPassenger: Passenger) => {
-    const updated = passengers.map((p) => p.id === updatedPassenger.id ? updatedPassenger : p);
-    savePassengersToStorage(updated);
-    setSelectedPassenger(updatedPassenger);
+  const handleUpdatePassenger = async (updatedPassenger: Passenger) => {
+    if (!token) return;
+
+    try {
+      const res = await fetch(`/api/passengers/${updatedPassenger.id}`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(updatedPassenger)
+      });
+
+      if (res.ok) {
+        const updated = await res.json();
+        setPassengers(passengers.map((p) => p.id === updated.id ? updated : p));
+        setSelectedPassenger(updated);
+      } else {
+        const errData = await res.json();
+        alert(errData.error || 'তথ্য আপডেট করতে ব্যর্থ হয়েছে।');
+      }
+    } catch (e) {
+      console.error("Error updating passenger", e);
+    }
   };
 
-  // Delete passenger handler
-  const handleDeletePassenger = (id: string) => {
-    const updated = passengers.filter((p) => p.id !== id);
-    savePassengersToStorage(updated);
-    if (selectedPassenger?.id === id) {
-      setSelectedPassenger(null);
+  // Delete passenger handler via API
+  const handleDeletePassenger = async (id: string) => {
+    if (!token) return;
+
+    try {
+      const res = await fetch(`/api/passengers/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (res.ok) {
+        setPassengers(passengers.filter((p) => p.id !== id));
+        if (selectedPassenger?.id === id) {
+          setSelectedPassenger(null);
+        }
+      } else {
+        const errData = await res.json();
+        alert(errData.error || 'যাত্রীর তথ্য ডিলিট করতে ব্যর্থ হয়েছে।');
+      }
+    } catch (e) {
+      console.error("Error deleting passenger", e);
     }
   };
 
@@ -110,14 +234,46 @@ export default function App() {
       )
     : [];
 
-  // Reset database to initial defaults
-  const handleResetToDefaults = () => {
-    if (confirm('আপনি কি নিশ্চিতভাবে ডাটাবেজ রিসেট করে ডেমো যাত্রী ডেটা লোড করতে চান?')) {
-      savePassengersToStorage(INITIAL_PASSENGERS);
-      alert('সফলভাবে রিসেট করা হয়েছে!');
+  // Reset database to initial defaults (securely mapped to user phone)
+  const handleResetToDefaults = async () => {
+    if (!token) return;
+    if (confirm('আপনি কি নিশ্চিতভাবে আপনার অ্যাকাউন্ট ডাটাবেজ রিসেট করে ডেমো যাত্রী ডেটা লোড করতে চান? এটি আপনার অন্য কোনো ডেটা পরিবর্তন করবে না।')) {
+      try {
+        const res = await fetch('/api/passengers/reset', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setPassengers(data.passengers);
+          alert('আপনার অ্যাকাউন্টের ডেমো ডেটা সফলভাবে রিসেট ও লোড করা হয়েছে!');
+        } else {
+          alert('রিসেট করতে ব্যর্থ হয়েছে।');
+        }
+      } catch (e) {
+        console.error("Error resetting data", e);
+      }
     }
   };
 
+  // 1. SHOW LOADING WHILE AUTH STATE IS BEING DETERMINED
+  if (isAuthenticated === null) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-200">
+        <div className="space-y-4 text-center">
+          <Loader2 className="h-10 w-10 text-blue-500 animate-spin mx-auto" />
+          <p className="text-xs font-bold uppercase tracking-widest text-slate-500">নিরাপত্তা ভেরিফিকেশন চলছে...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. SHOW LOGIN SCREEN IF NOT AUTHENTICATED
+  if (!isAuthenticated) {
+    return <Login onLoginSuccess={handleLoginSuccess} />;
+  }
+
+  // 3. SHOW AUTHENTICATED MAIN APPLICATION
   return (
     <div className="min-h-screen bg-slate-50 text-gray-800 flex flex-col font-sans">
       
@@ -150,7 +306,7 @@ export default function App() {
                 <input
                   id="header-global-search"
                   type="text"
-                  placeholder="যাত্রীর নাম লিখে সার্চ করুন... (e.g. হাফেজ মোঃ মাহমুদুল হাসান)"
+                  placeholder="যাত্রীর নাম লিখে সার্চ করুন..."
                   value={headerSearch}
                   onChange={(e) => {
                     setHeaderSearch(e.target.value);
@@ -206,10 +362,27 @@ export default function App() {
               )}
             </div>
 
-            {/* DateTime Display (Bilingual) */}
-            <div className="flex items-center gap-2 shrink-0 text-xs text-slate-400 font-mono hidden md:flex border-l border-slate-800 pl-4">
-              <Clock className="h-3.5 w-3.5 text-blue-500" />
-              <span>UTC Local: 2026-06-25</span>
+            {/* Account Status and Logout Button */}
+            <div className="flex items-center gap-3 shrink-0 pl-4 border-l border-slate-800">
+              <div className="hidden md:flex flex-col text-right">
+                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-1 justify-end">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                  নিরাপদ সেশন
+                </span>
+                <span className="text-xs font-mono font-bold text-slate-200">
+                  {userPhone}
+                </span>
+              </div>
+              <div className="p-1.5 bg-slate-850 rounded-xl flex items-center gap-1.5 border border-slate-800">
+                <button
+                  onClick={handleLogout}
+                  title="লগআউট করুন"
+                  className="p-2 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg cursor-pointer transition-colors flex items-center gap-1 text-xs font-bold"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span className="hidden sm:inline">লগআউট</span>
+                </button>
+              </div>
             </div>
 
           </div>
@@ -268,16 +441,6 @@ export default function App() {
         <div className="absolute -top-40 -left-40 w-96 h-96 bg-blue-600 rounded-full blur-3xl opacity-20 pointer-events-none"></div>
         <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-indigo-600 rounded-full blur-3xl opacity-20 pointer-events-none"></div>
 
-        {/* Dynamic flying airplane line silhouette in the background */}
-        <div className="absolute right-10 bottom-10 opacity-10 hidden lg:block pointer-events-none select-none">
-          <svg width="400" height="150" viewBox="0 0 400 150" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M10 130 C 150 90, 250 30, 380 20" stroke="white" strokeWidth="2" strokeDasharray="6 6" />
-            <g transform="translate(370, 10) rotate(-15)">
-              <path d="M0 15 L15 0 L35 15 L20 18 L15 35 L12 18 Z" fill="white" />
-            </g>
-          </svg>
-        </div>
-
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-8 relative z-10">
           <div className="space-y-4">
             <div className="flex items-center gap-2 bg-blue-500/10 text-blue-400 px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-widest w-fit border border-blue-500/20 shadow-xs">
@@ -301,7 +464,7 @@ export default function App() {
             </div>
 
             <p className="text-slate-400 text-xs sm:text-sm max-w-2xl leading-relaxed">
-              নিরাপদ ক্লাউড ডাটাবেজ সিস্টেমে যাত্রীদের পাসপোর্ট নম্বর, ভিসা এবং টিকিটের তথ্য স্বয়ংক্রিয়ভাবে তালিকাভুক্ত করুন। উপরের সার্চবারে যেকোনো যাত্রীর নাম লিখে এক ক্লিকে বিস্তারিত খুঁজে নিন।
+              নিরাপদ ক্লাউড ডাটাবেজ সিস্টেমে যাত্রীদের পাসপোর্ট নম্বর, ভিসা এবং টিকিটের তথ্য স্বয়ংক্রিয়ভাবে তালিকাভুক্ত করুন। আপনার অ্যাকাউন্ট নম্বর দিয়ে লগইন করা অবস্থায় শুধুমাত্র আপনারই নিবন্ধিত ডেটা এখানে দেখতে পাবেন।
             </p>
           </div>
 
@@ -328,7 +491,7 @@ export default function App() {
       {/* 4. MAIN WORKSPACE CONTAINER */}
       <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 -mt-16 pb-12 relative z-20">
         
-        {/* Navigation Tabs Bar - Redesigned as Beautiful interactive Action Cards */}
+        {/* Navigation Tabs Bar */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           {/* Card 1: Dashboard */}
           <button
@@ -339,7 +502,6 @@ export default function App() {
                 : 'bg-white hover:bg-slate-50/50 border-gray-100 hover:border-gray-200 shadow-sm'
             }`}
           >
-            {/* Background absolute subtle glow for active */}
             {activeTab === 'dashboard' && (
               <div className="absolute right-0 top-0 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl pointer-events-none"></div>
             )}
@@ -373,7 +535,6 @@ export default function App() {
                 : 'bg-white hover:bg-slate-50/50 border-gray-100 hover:border-gray-200 shadow-sm'
             }`}
           >
-            {/* Background absolute subtle glow for active */}
             {activeTab === 'database' && (
               <div className="absolute right-0 top-0 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none"></div>
             )}
@@ -409,7 +570,6 @@ export default function App() {
                 : 'bg-white hover:bg-slate-50/50 border-gray-100 hover:border-gray-200 shadow-sm'
             }`}
           >
-            {/* Background absolute subtle glow for active */}
             {(activeTab === 'add' || editingPassenger !== null) && (
               <div className="absolute right-0 top-0 w-24 h-24 bg-purple-500/10 rounded-full blur-2xl pointer-events-none"></div>
             )}
@@ -427,7 +587,7 @@ export default function App() {
                   <span className={`text-sm sm:text-base font-bold transition-colors duration-200 ${
                     (activeTab === 'add' || editingPassenger !== null) ? 'text-slate-900' : 'text-slate-700'
                   }`}>
-                    {editingPassenger ? 'তথ্য সংশোধন' : 'যাত্রী তথ্য ফরম'}
+                    {editingPassenger ? '정보 수정' : 'যাত্রী তথ্য ফরম'}
                   </span>
                   {editingPassenger && (
                     <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 font-semibold animate-pulse">Editing</span>
@@ -443,54 +603,68 @@ export default function App() {
 
         {/* Tab View Contents */}
         <div className="space-y-6">
-          {activeTab === 'dashboard' && (
+          {/* SECURE LOADING SCREEN FOR DATABASE DATA */}
+          {loadingPassengers ? (
+            <div className="bg-white border border-gray-100 rounded-3xl p-16 text-center">
+              <Loader2 className="h-8 w-8 text-blue-500 animate-spin mx-auto mb-4" />
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">ডাটাবেজ লোড হচ্ছে...</p>
+            </div>
+          ) : (
             <>
-              <Dashboard passengers={passengers} />
-              <div className="border border-gray-100 rounded-2xl bg-white p-5 flex flex-col md:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
-                    <CheckCircle className="h-5 w-5" />
+              {activeTab === 'dashboard' && (
+                <>
+                  <Dashboard passengers={passengers} />
+                  
+                  {/* Security Assurance Banner */}
+                  <div className="border border-blue-500/10 rounded-2xl bg-blue-500/5 p-5 flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+                        <CheckCircle className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-gray-900 text-sm">জিরো-ট্রাস্ট অ্যাকাউন্ট সিকিউরিটি সক্রিয়</h4>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          আপনার ডাটাবেজ সম্পূর্ণ আলাদা। আপনি ছাড়া অন্য কোনো ব্যবহারকারী আপনার নিবন্ধিত তথ্য অ্যাক্সেস বা সার্চ করতে পারবেন না।
+                        </p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => setActiveTab('database')} 
+                      className="text-xs font-bold text-blue-700 hover:underline cursor-pointer bg-blue-50 hover:bg-blue-100/70 px-4 py-2 rounded-xl transition-all"
+                    >
+                      ডাটাবেজ টেবিল ভিউ দেখুন →
+                    </button>
                   </div>
-                  <div>
-                    <h4 className="font-bold text-gray-900 text-sm">স্বয়ংক্রিয় ক্লাউড সিঙ্ক সক্রিয় রয়েছে (Cloud Run Live Service Active)</h4>
-                    <p className="text-xs text-gray-500 mt-0.5">যাত্রীদের প্রতিটি এন্ট্রি স্বয়ংক্রিয়ভাবে ক্লাউডে এবং আপনার লোকাল মেমোরিতে সংরক্ষণ হচ্ছে।</p>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => setActiveTab('database')} 
-                  className="text-xs font-bold text-blue-700 hover:underline cursor-pointer bg-blue-50 hover:bg-blue-100/70 px-4 py-2 rounded-xl transition-all"
-                >
-                  ডাটাবেজ টেবিল ভিউ দেখুন →
-                </button>
-              </div>
+                </>
+              )}
+
+              {activeTab === 'database' && (
+                <PassengerList
+                  passengers={passengers}
+                  onView={(p) => setSelectedPassenger(p)}
+                  onEdit={(p) => {
+                    setEditingPassenger(p);
+                    setActiveTab('add');
+                  }}
+                  onDelete={handleDeletePassenger}
+                  onAddNew={() => {
+                    setEditingPassenger(null);
+                    setActiveTab('add');
+                  }}
+                />
+              )}
+
+              {(activeTab === 'add' || editingPassenger !== null) && (
+                <PassengerForm
+                  passenger={editingPassenger}
+                  onSubmit={handleFormSubmit}
+                  onCancel={() => {
+                    setEditingPassenger(null);
+                    setActiveTab('database');
+                  }}
+                />
+              )}
             </>
-          )}
-
-          {activeTab === 'database' && (
-            <PassengerList
-              passengers={passengers}
-              onView={(p) => setSelectedPassenger(p)}
-              onEdit={(p) => {
-                setEditingPassenger(p);
-                setActiveTab('add');
-              }}
-              onDelete={handleDeletePassenger}
-              onAddNew={() => {
-                setEditingPassenger(null);
-                setActiveTab('add');
-              }}
-            />
-          )}
-
-          {(activeTab === 'add' || editingPassenger !== null) && (
-            <PassengerForm
-              passenger={editingPassenger}
-              onSubmit={handleFormSubmit}
-              onCancel={() => {
-                setEditingPassenger(null);
-                setActiveTab('database');
-              }}
-            />
           )}
         </div>
       </main>
@@ -509,7 +683,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 space-y-2">
           <p>© 2026 Hamaf Air International Travel Agency. All Rights Reserved.</p>
           <p className="text-slate-600 text-[10px]">
-            Designed for hamafairinternational.vercel.app • Persistent Client-Cloud Sync System
+            Designed for hamafairinternational.vercel.app • Secure Full-Stack OTP Auth System
           </p>
         </div>
       </footer>
